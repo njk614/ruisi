@@ -1,0 +1,35 @@
+# 客户画像
+customer:
+  default_name: '张三'
+  profile_file: '/home/clawd/.openclaw/workspace/SimulatedData/CustomerProfile.md'
+
+# 知识库检索
+knowledge:
+  file_path: '/home/clawd/.openclaw/workspace/SimulatedData/KnowledgeBase/DH初始知识库.txt'
+  top_k: 3
+  chunk_chars: 500
+
+# 会议信息
+meetings:
+  file_path: '/home/clawd/.openclaw/workspace/SimulatedData/meetings.json'
+
+# P02 消息发送
+p02:
+  api_url: 'http://127.0.0.1:18900/send'
+  to_jid: 'niujunke@im.tuguan.net'
+  from_account: 'a01@im.tuguan.net'
+  token: ''
+  timeout_seconds: 5
+  dry_run: false
+
+# explanation-service 控制入口
+explanation_service:
+  message_service_script: '~/.openclaw/workspace_a01/skills/explanation-service/scripts/explanation_message_service.py'
+  pause_message: '暂停讲解'
+  sender_jid: ''
+  session_id: ''
+
+# 留痕
+trace:
+  enabled: true
+  base_dir: './trace-workspace/free-qa/'

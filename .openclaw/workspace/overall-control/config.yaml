@@ -1,0 +1,64 @@
+# Overall Control Skill 配置文件
+
+# MQTT 配置
+mqtt:
+  broker: '60.204.215.30'
+  port: 1883
+  username: 'twinioc'
+  password: 'hefgwGkuzPdEhmo2'
+  keepalive: 60
+  # 设备控制 Topic
+  topics:
+    lighting: 'office/control/light' # 灯光开关：{ "devsId":"设备ID", "status":"on/off" }
+    hvac_switch: 'office/control/wkq' # 空调开关：{ "devsId":"设备ID", "status":"on/off" }
+    hvac_temp: 'office/control/{devsId}/temp' # 空调温度：{devsId} 为设备ID，payload 为温度值
+
+# 区域-设备映射
+zones:
+  entrance:
+    zone_id: 'entrance'
+    zone_name: '门厅'
+    lighting: ['qt'] # 灯光设备ID列表（需替换为实际ID）
+    hvac: ['wkqqt1', 'wkqqt2'] # 空调设备ID列表（需替换为实际ID）
+    feedback_targets: ['P01']
+  meeting_room:
+    zone_id: 'meeting_room'
+    zone_name: '大会议室'
+    lighting: ['dhys'] # 灯光设备ID列表（需替换为实际ID）
+    hvac: ['wkqdhys'] # 空调设备ID列表（需替换为实际ID）
+    feedback_targets: ['P01', 'P02']
+  main_hall:
+    zone_id: 'main_hall'
+    zone_name: '主场'
+    lighting: ['xmpt', 'xs', 'zjsc'] # 灯光设备ID列表（需替换为实际ID）
+    hvac: ['wkqxmb', 'wkqxsb', 'wkqxmpt', 'wkqcpb'] # 空调设备ID列表（需替换为实际ID）
+    feedback_targets: ['P01', 'P03']
+
+# 设备 JID 映射（用于反馈推送）
+devices:
+  P01: 'niujunke@im.tuguan.net' # 测试阶段统一推送
+  P02: 'niujunke@im.tuguan.net'
+  P03: 'niujunke@im.tuguan.net'
+
+# XMPP 推送配置
+xmpp:
+  api_url: 'http://127.0.0.1:18900/send'
+  from_account: 'a01@im.tuguan.net'
+  timeout_seconds: 5
+
+# 当前上下文文件（记录用户当前所在区域）
+context:
+  file_path: '../../trace-workspace/current_context.json'
+
+# 环境数据接口（自动调节模式）
+environment:
+  api_url: 'http://127.0.0.1:18900/api/environment/query'
+  temperature_threshold:
+    min: 22 # 低于此温度开空调
+    max: 26 # 高于此温度开空调
+    target: 24 # 目标温度
+
+# 留痕配置
+trace:
+  enabled: true
+  base_dir: '../../trace-workspace'
