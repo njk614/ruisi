@@ -84,7 +84,7 @@ python scripts/environment_query.py check meeting_room
 
 - **lighting**：开灯、关灯、打开灯光、关闭照明
 - **hvac**：开空调、关空调、空调、温度、调温
-- **twinscreen**：大屏、切换场景、层级、视野、图层
+- **twinscreen**：大屏、切换场景、层级、视野、图层、聚焦/选中对象、摄像头/视频、回放、云台。**本类不在本地执行**——识别后把用户原始输入转发给 `ar01@im.tuguan.net`，回用户"孪易交互指令已转发给AR01"，不解析参数、不查接口、不等回传（详见 SKILL.md 步骤 2.3）。
 
 ### 动作识别
 
