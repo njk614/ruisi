@@ -1,0 +1,25 @@
+{
+  "script_title": "会议讲解脚本标题",
+  "chapters": [
+    {
+      "chapter_id": 1,
+      "chapter_topic": "开场致辞",
+      "resource": {
+        "type": "image",
+        "url": "http://172.16.1.98:8888/SimulatedData/DisplayResourceLibrary/images/welcome.png",
+        "params": null,
+        "description": "欢迎背景"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "尊敬的各位领导、专家，大家好！我是AI接待助理。",
+          "duration": 8,
+          "audio": "audio/audio_001_01.mp3",
+          "performance_code": "bow",
+          "performance_desc": "动作-鞠躬"
+        }
+      ]
+    }
+  ]
+}

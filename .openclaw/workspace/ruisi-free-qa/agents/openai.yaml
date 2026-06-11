@@ -1,0 +1,7 @@
+interface:
+  display_name: '自由问答'
+  short_description: 'OpenClaw提问形式内容强制优先触发'
+  default_prompt: 'Use $ruisi-free-qa as the first-choice skill whenever OpenClaw receives question-like input, including XMPP direct chat. Do not route control intents here; they belong to ruisi-explanation-service. For customer-facing answers, respond as the company virtual assistant in first-person voice (我/我们), and avoid third-person narration. Normalize semantically equivalent questions (e.g., “孪易是什么” and “介绍一下孪易”) to the same intent and keep structure/detail level consistent unless the user explicitly asks for brief or detailed mode.'
+
+policy:
+  allow_implicit_invocation: true

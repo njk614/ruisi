@@ -5,7 +5,7 @@ import os
 import sys
 import json
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Load .env file if exists (parent directory, not scripts subdir)
 ENV_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
@@ -35,9 +35,8 @@ FROM_JID      = 'ae01@im.tuguan.net'
 # Meetings file path
 MEETINGS_FILE = os.path.expanduser('~/.openclaw/workspace/SimulatedData/meetings.json')
 
-# Forward cooldown: (zone, countValue) -> last_forward_timestamp
-_cooldown = {}  # {(zone, countValue): timestamp}
-COOLDOWN_SECONDS = 300  # 5 minutes
+# Forward cooldown: (zone, expected_count) -> meeting_end_datetime
+_cooldown = {}  # {(zone, expected_count): datetime}
 
 def load_meetings():
     """Load meetings from JSON file"""
@@ -51,8 +50,8 @@ def load_meetings():
 def check_meeting_match(event_time_str, count_value):
     """
     Check if event_time falls within any meeting's time_range
-    and countValue matches internal_staff + visitor_count.
-    Returns (matched_zone, expected_count) if matched, else None.
+    and countValue >= internal_staff + visitor_count.
+    Returns (matched_zone, expected_count, end_dt) if matched, else None.
     """
     meetings = load_meetings()
     try:
@@ -88,11 +87,11 @@ def check_meeting_match(event_time_str, count_value):
             logging.warning(f"Failed to parse time_range: {time_range}, {e}")
             continue
 
-        # Check if eventTime is within range and count matches
-        if start_dt <= event_dt <= end_dt and count_value == expected_count:
+        # Check if eventTime is within range (extended 30min earlier) and count >= expected
+        if start_dt - timedelta(minutes=30) <= event_dt <= end_dt and count_value >= expected_count:
             logging.info(f"Meeting matched: room={room_name}, zone={zone}, time_range={time_range}, "
                         f"expected_count={expected_count}, actual_count={count_value}")
-            return (zone, expected_count)
+            return (zone, expected_count, end_dt)
 
     return None
 
@@ -119,16 +118,21 @@ def forward_to_a01(msg_data):
             logging.info(f"Skipped: no matching meeting for eventTime={event_time}, countValue={count_value}")
             return False
 
-        zone, expected_count = match_result
+        zone, expected_count, meeting_end_dt = match_result
 
-        # Cooldown check: (zone, countValue) -> 5min silence
-        cooldown_key = (zone, count_value)
-        now = time.time()
-        last_forward = _cooldown.get(cooldown_key, 0)
-        if now - last_forward < COOLDOWN_SECONDS:
-            elapsed = int(now - last_forward)
-            remaining = COOLDOWN_SECONDS - elapsed
-            logging.info(f"Cooldown active for {cooldown_key}: {remaining}s remaining, skipped")
+        # Parse event_dt for cooldown check
+        try:
+            event_dt = datetime.strptime(event_time, "%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            logging.warning(f"Failed to parse eventTime: {event_time}, {e}")
+            return False
+
+        # Cooldown check: (zone, expected_count) -> until meeting end_dt
+        cooldown_key = (zone, expected_count)
+        cached_end_dt = _cooldown.get(cooldown_key)
+        if cached_end_dt and event_dt <= cached_end_dt:
+            remaining = (cached_end_dt - event_dt).total_seconds()
+            logging.info(f"Cooldown active for {cooldown_key}: {int(remaining)}s until meeting end, skipped")
             return False
 
         # Convert eventTime to ISO format
@@ -155,7 +159,8 @@ def forward_to_a01(msg_data):
             result = resp.json()
             if result.get('success'):
                 logging.info(f"Forwarded to {FORWARD_TO}: {forward_body} -> {result.get('messageId', 'OK')}")
-                _cooldown[cooldown_key] = now  # refresh cooldown
+                # Store meeting_end_dt for cooldown: forward again only after meeting ends
+                _cooldown[cooldown_key] = meeting_end_dt
                 return True
         logging.warning(f"Forward failed: {resp.status_code} - {resp.text}")
     except Exception as e:
