@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -21,24 +22,32 @@ def resolve_message_service_script(config: dict[str, Any]) -> Path:
             path = Path.cwd() / path
         return path.resolve()
 
-    default_path = Path(__file__).resolve().parents[2] / "ruisi-explanation-service" / "scripts" / "explanation_message_service.py"
+    default_path = Path(__file__).resolve().parents[2] / "ruisi-explanation-service" / "scripts" / "send_message.py"
     return default_path
 
 
 def build_command(script_path: Path, config: dict[str, Any]) -> list[str]:
     section = config.get("explanation_service", {})
-    pause_message = str(section.get("pause_message", "暂停讲解")).strip() or "暂停讲解"
-    command = [sys.executable, str(script_path), "--message", pause_message]
+    pause_message = str(section.get("pause_message", "暂停")).strip() or "暂停"
+    return [sys.executable, str(script_path), "--payload", pause_message]
 
-    sender_jid = str(section.get("sender_jid", "")).strip()
-    if sender_jid:
-        command.extend(["--sender-jid", sender_jid])
 
-    session_id = str(section.get("session_id", "")).strip()
-    if session_id:
-        command.extend(["--session-id", session_id])
+def parse_json_stdout(stdout: str) -> dict[str, Any] | None:
+    if not stdout:
+        return None
+    try:
+        payload = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
 
-    return command
+
+def is_no_running_demo_result(stdout: str) -> bool:
+    payload = parse_json_stdout(stdout)
+    if not payload:
+        return False
+    message = str(payload.get("message", ""))
+    return payload.get("status") == "failed" and "当前没有正在运行的演示" in message
 
 
 def main() -> int:
@@ -49,18 +58,21 @@ def main() -> int:
     try:
         config = load_config()
         script_path = resolve_message_service_script(config)
-        if not script_path.exists():
-            raise FileNotFoundError(f"ruisi-explanation-service 入口脚本不存在: {script_path}")
-
         command = build_command(script_path, config)
         if args.dry_run:
             print(json_dumps({"status": "success", "message": "dry-run", "command": command}))
             return 0
 
+        if not script_path.exists():
+            raise FileNotFoundError(f"ruisi-explanation-service 入口脚本不存在: {script_path}")
+
         result = subprocess.run(command, capture_output=True, text=True, check=False)
         stdout = (result.stdout or "").strip()
         stderr = (result.stderr or "").strip()
         if result.returncode != 0:
+            if is_no_running_demo_result(stdout):
+                print(json_dumps({"status": "success", "message": "当前无演示，无需暂停", "detail": stdout}))
+                return 0
             detail = stderr or stdout or f"exit={result.returncode}"
             raise RuntimeError(detail)
 

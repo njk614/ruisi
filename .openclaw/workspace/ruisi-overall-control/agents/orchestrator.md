@@ -49,33 +49,33 @@ description: 总体控制流程编排器，负责解析用户指令、调用设�
 
 ```bash
 # 灯光控制示例
-python scripts/mqtt_controller.py '{"device_type":"lighting","zone":"meeting_room","action":"on","all":true}'
+python scripts/mqtt_controller.py '{"device_type":"lighting","zone":"meeting-room-large","action":"on","all":true}'
 
 # 空调开关示例
-python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting_room","action":"on","all":true}'
+python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting-room-large","action":"on","all":true}'
 
 # 空调设置温度示例
-python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting_room","action":"set_temperature","temperature":24,"all":true}'
+python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting-room-large","action":"set_temperature","temperature":24,"all":true}'
 ```
 
 ### send_feedback.py
 
 ```bash
-python scripts/send_feedback.py "meeting_room" "已为您打开大会议室的灯光。"
+python scripts/send_feedback.py "meeting-room-large" "已为您打开大会议室的灯光。"
 ```
 
 ### zone_context.py
 
 ```bash
 python scripts/zone_context.py get
-python scripts/zone_context.py set meeting_room
+python scripts/zone_context.py set meeting-room-large
 ```
 
 ### environment_query.py
 
 ```bash
-python scripts/environment_query.py query meeting_room
-python scripts/environment_query.py check meeting_room
+python scripts/environment_query.py query meeting-room-large
+python scripts/environment_query.py check meeting-room-large
 ```
 
 ## 语义解析规则
@@ -96,8 +96,8 @@ python scripts/environment_query.py check meeting_room
 ### 区域识别
 
 - **门厅**：entrance
-- **大会议室/会议室**：meeting_room
-- **主场**：main_hall
+- **大会议室/会议室**：meeting-room-large
+- **主场**：main-hall
 
 ## 示例场景
 
@@ -111,7 +111,7 @@ python scripts/environment_query.py check meeting_room
 {
   "device_type": "lighting",
   "action": "on",
-  "zone": "meeting_room",
+  "zone": "meeting-room-large",
   "all": true
 }
 ```
@@ -132,7 +132,7 @@ python scripts/environment_query.py check meeting_room
   "device_type": "hvac",
   "action": "set_temperature",
   "temperature": 24,
-  "zone": "meeting_room", // 从 context 读取或询问
+  "zone": "meeting-room-large", // 从 context 读取或询问
   "all": true
 }
 ```
@@ -153,7 +153,7 @@ python scripts/environment_query.py check meeting_room
 ```json
 {
   "trigger_type": "auto",
-  "zone": "meeting_room",
+  "zone": "meeting-room-large",
   "visitor_count": 3
 }
 ```
@@ -161,7 +161,7 @@ python scripts/environment_query.py check meeting_room
 执行步骤：
 
 1. 验证 visitor_count > 0
-2. 调用 `environment_query.py check meeting_room`
+2. 调用 `environment_query.py check meeting-room-large`
 3. 如果需要调节，执行开空调+设温操作
 4. 推送反馈消息
 

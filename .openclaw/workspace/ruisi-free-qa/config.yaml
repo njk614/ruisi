@@ -1,17 +1,14 @@
-# 客户画像
-customer:
-  default_name: '张三'
-  profile_file: '/home/clawd/.openclaw/workspace/SimulatedData/CustomerProfile.md'
+# 预置会议数据
+preset_meeting_data:
+  base_dir: '/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData'
+  meeting_index_file: 'meeting_index.json'
+  meeting_region: '大会议室'
 
 # 知识库检索
 knowledge:
   file_path: '/home/clawd/.openclaw/workspace/SimulatedData/KnowledgeBase/DH初始知识库.txt'
   top_k: 3
   chunk_chars: 500
-
-# 会议信息
-meetings:
-  file_path: '/home/clawd/.openclaw/workspace/SimulatedData/meetings.json'
 
 # P02 消息发送
 p02:
@@ -24,10 +21,8 @@ p02:
 
 # ruisi-explanation-service 控制入口
 explanation_service:
-  message_service_script: '~/.openclaw/workspace_a01/skills/ruisi-explanation-service/scripts/explanation_message_service.py'
-  pause_message: '暂停讲解'
-  sender_jid: ''
-  session_id: ''
+  message_service_script: '~/.openclaw/workspace_a01/skills/ruisi-explanation-service/scripts/send_message.py'
+  pause_message: '暂停'
 
 # 留痕
 trace:

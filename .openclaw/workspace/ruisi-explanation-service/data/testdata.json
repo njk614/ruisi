@@ -1,0 +1,452 @@
+{
+  "script_title": "华为智慧园区数字孪生与AI智能体产品汇报",
+  "chapters": [
+    {
+      "chapter_id": 1,
+      "chapter_topic": "开场致辞",
+      "resource": {
+        "type": "image",
+        "url": "/images/huawei_welcome.png",
+        "description": "华为欢迎背景"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "尊敬的华为各位领导、专家，大家好！我是数字冰雹的AI接待助理。",
+          "duration": 6,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_001_01.mp3",
+          "performance_code": "bow",
+          "performance_desc": "动作-鞠躬"
+        },
+        {
+          "segment_id": 2,
+          "text": "非常荣幸能在这里向各位汇报我们在数字孪生与AI智能体领域的技术积累与产品体系，共同探讨智慧园区建设的合作契机。",
+          "duration": 12,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_001_02.mp3",
+          "performance_code": "smile",
+          "performance_desc": "表情-微笑"
+        }
+      ]
+    },
+    {
+      "chapter_id": 2,
+      "chapter_topic": "公司实力-P2：深耕与融入",
+      "resource": {
+        "type": "image",
+        "url": "/images/company_strength_p2.png",
+        "description": "公司历程与融入"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "我们在数字孪生领域深耕近二十年，积累了上千个落地项目经验，也早已深度融入华为的生态体系。",
+          "duration": 10,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_002_01.mp3",
+          "performance_code": "serious",
+          "performance_desc": "表情-认真"
+        }
+      ]
+    },
+    {
+      "chapter_id": 3,
+      "chapter_topic": "公司实力-P3：合作里程碑",
+      "resource": {
+        "type": "image",
+        "url": "/images/company_strength_p3.png",
+        "description": "认证与里程碑"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "自2019年携手华为打造苏州工业园智慧城市IOC标杆项目以来，公司先后通过了华为鲲鹏技术认证等多项权威认证。",
+          "duration": 12,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_003_01.mp3",
+          "performance_code": "point",
+          "performance_desc": "动作-指引"
+        },
+        {
+          "segment_id": 2,
+          "text": "基于“伙伴+华为”的合作模式，双方在智慧城市、智慧园区、智慧交通等垂直领域落地了数百个项目。",
+          "duration": 11,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_003_02.mp3",
+          "performance_code": null,
+          "performance_desc": null
+        }
+      ]
+    },
+    {
+      "chapter_id": 4,
+      "chapter_topic": "公司实力-P4：核心伙伴",
+      "resource": {
+        "type": "image",
+        "url": "/images/company_strength_p4.png",
+        "description": "核心伙伴与联合方案"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "我们不仅是华为智慧园区基线方案的核心合作伙伴之一，深度参与了8大智慧园区价值场景基线方案的联合发布。",
+          "duration": 13,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_004_01.mp3",
+          "performance_code": "thumbs_up",
+          "performance_desc": "动作-竖大拇指"
+        }
+      ]
+    },
+    {
+      "chapter_id": 5,
+      "chapter_topic": "公司实力-P5：获奖荣誉",
+      "resource": {
+        "type": "image",
+        "url": "/images/company_strength_p5.png",
+        "description": "获奖照片"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "更在2025年华为中国合作伙伴大会上，荣获华为2024年度“联合方案孵化奖”。",
+          "duration": 9,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_005_01.mp3",
+          "performance_code": "clap",
+          "performance_desc": "动作-鼓掌"
+        }
+      ]
+    },
+    {
+      "chapter_id": 6,
+      "chapter_topic": "公司实力-P6：生态总结",
+      "resource": {
+        "type": "image",
+        "url": "/images/company_strength_p6.png",
+        "description": "生态总结"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "可以说，我们既是华为技术生态的受益者，也是其智能世界蓝图的坚定同行者。",
+          "duration": 9,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_006_01.mp3",
+          "performance_code": "heart",
+          "performance_desc": "动作-比心"
+        }
+      ]
+    },
+    {
+      "chapter_id": 7,
+      "chapter_topic": "华为战略升级-图片1",
+      "resource": {
+        "type": "image",
+        "url": "/images/huawei_ai_campus_roadmap.png",
+        "description": "AI园区演进路线图"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "当前，华为正推动园区建设从“智慧园区2.0”迈向“AI驱动的智能空间”新阶段——这一趋势与我们产品的进化方向高度契合。",
+          "duration": 13,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_007_01.mp3",
+          "performance_code": "serious",
+          "performance_desc": "表情-认真"
+        },
+        {
+          "segment_id": 2,
+          "text": "华为所倡导的AI智能空间、智能体演进，强调以鸿蒙与AI双引擎驱动，围绕安全生产、高效运营与绿色低碳三大主线。",
+          "duration": 13,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_007_02.mp3",
+          "performance_code": null,
+          "performance_desc": null
+        }
+      ]
+    },
+    {
+      "chapter_id": 8,
+      "chapter_topic": "产品导入图",
+      "resource": {
+        "type": "image",
+        "url": "/images/products_intro.png",
+        "description": "产品导入图"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "实现从分散到集中、从计划到随需的运营模式跨越。而我们接下来要介绍的两大核心产品——图观和孪易——正是为这一趋势而生。",
+          "duration": 14,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_008_01.mp3",
+          "performance_code": "point",
+          "performance_desc": "动作-指引"
+        }
+      ]
+    },
+    {
+      "chapter_id": 9,
+      "chapter_topic": "图观-概念与全流程（视频0-15s）",
+      "resource": {
+        "type": "video",
+        "url": "/videos/tuguan_intro.mp4",
+        "params": {
+          "start": 0,
+          "end": 15
+        },
+        "description": "视频片段1：概念与全流程"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "图观是一套帮助前端开发者高效构建数字孪生应用的开发套件，满足了三维场景构建、API代码开发、应用配置的全流程需求。",
+          "duration": 14,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_009_01.mp3",
+          "performance_code": "point",
+          "performance_desc": "动作-指引"
+        }
+      ]
+    },
+    {
+      "chapter_id": 10,
+      "chapter_topic": "图观-端流融合技术（视频0-12s）",
+      "resource": {
+        "type": "video",
+        "url": "/videos/tuguan_tech.mp4",
+        "params": {
+          "start": 0,
+          "end": 12
+        },
+        "description": "视频片段2：技术架构"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "它融合了端渲染与流渲染两大技术路线，通过一套统一API，一套JavaScript代码可以同时兼容两种模式运行。",
+          "duration": 12,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_010_01.mp3",
+          "performance_code": null,
+          "performance_desc": null
+        }
+      ]
+    },
+    {
+      "chapter_id": 11,
+      "chapter_topic": "图观-低成本与模型库（视频12-22s）",
+      "resource": {
+        "type": "video",
+        "url": "/videos/tuguan_tech.mp4",
+        "params": {
+          "start": 12,
+          "end": 22
+        },
+        "description": "视频片段3：低成本与模型库"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "无需大量增加服务器成本即可获得专业级的三维效果。此外，图观还提供了海量模型资产库。",
+          "duration": 10,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_011_01.mp3",
+          "performance_code": null,
+          "performance_desc": null
+        }
+      ]
+    },
+    {
+      "chapter_id": 12,
+      "chapter_topic": "图观-拖拽搭建（视频0-18s）",
+      "resource": {
+        "type": "video",
+        "url": "/videos/tuguan_assets.mp4",
+        "params": {
+          "start": 0,
+          "end": 18
+        },
+        "description": "视频片段4：拖拽搭建与交付"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "用户无需建模背景，通过拖拽即可快速搭建出专业的数字孪生场景，在智慧园区等项目中可显著缩短交付周期。",
+          "duration": 12,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_012_01.mp3",
+          "performance_code": "thumbs_up",
+          "performance_desc": "动作-竖大拇指"
+        }
+      ]
+    },
+    {
+      "chapter_id": 13,
+      "chapter_topic": "孪易-中枢定位",
+      "resource": {
+        "type": "image",
+        "url": "/images/luanyi_overview.png",
+        "description": "孪易中枢定位"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "孪易数字孪生IOC则更像一座开箱即用的智能运营“中枢”。它基于用户现有业务数据，通过后台可视化配置直接搭建出专业的监控运维后台。",
+          "duration": 16,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_013_01.mp3",
+          "performance_code": "serious",
+          "performance_desc": "表情-认真"
+        }
+      ]
+    },
+    {
+      "chapter_id": 14,
+      "chapter_topic": "孪易-鸿蒙对接",
+      "resource": {
+        "type": "image",
+        "url": "/images/luanyi_harmony.png",
+        "description": "孪易鸿蒙对接"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "孪易已深度融入华为生态，与华为鸿蒙完成了紧密对接，既能为智慧园区、智慧城市等场景提供可配置的行业插件，也支持通过孪易API进行二次开发。",
+          "duration": 17,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_014_01.mp3",
+          "performance_code": null,
+          "performance_desc": null
+        }
+      ]
+    },
+    {
+      "chapter_id": 15,
+      "chapter_topic": "睿司-概念与架构",
+      "resource": {
+        "type": "image",
+        "url": "/images/ruisi_arch.png",
+        "description": "睿司概念与架构"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "而睿司智能体平台，则是我们面向AI时代打造的一支“数字员工”团队。它基于GraphRAT架构（图检索与思维链深度融合）。",
+          "duration": 15,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_015_01.mp3",
+          "performance_code": null,
+          "performance_desc": null
+        }
+      ]
+    },
+    {
+      "chapter_id": 16,
+      "chapter_topic": "睿司-协同能力",
+      "resource": {
+        "type": "image",
+        "url": "/images/ruisi_collab.png",
+        "description": "睿司协同能力"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "支持多模型调度和知识库检索增强，能够像群聊一样通过自然语言进行多智能体协同会话。",
+          "duration": 10,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_016_01.mp3",
+          "performance_code": null,
+          "performance_desc": null
+        }
+      ]
+    },
+    {
+      "chapter_id": 17,
+      "chapter_topic": "睿司-价值总结",
+      "resource": {
+        "type": "image",
+        "url": "/images/ruisi_value.png",
+        "description": "睿司价值总结"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "这正是华为AI Campus战略所呼吁的——让园区从“能感知”迈向“会思考”——我们可以合力让园区拥有一个真正懂业务的智慧大脑。",
+          "duration": 16,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_017_01.mp3",
+          "performance_code": "heart",
+          "performance_desc": "动作-比心"
+        }
+      ]
+    },
+    {
+      "chapter_id": 18,
+      "chapter_topic": "展望未来-合作维度1（AppCube）",
+      "resource": {
+        "type": "image",
+        "url": "/images/appcube_coop.png",
+        "description": "AppCube合作示意"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "展望未来，我们期待与华为在以下几个维度深化合作：首先，图观引擎可以无缝对接华为AppCube低代码平台，进一步提升行业解决方案的交付效率。",
+          "duration": 18,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_018_01.mp3",
+          "performance_code": "point",
+          "performance_desc": "动作-指引"
+        }
+      ]
+    },
+    {
+      "chapter_id": 19,
+      "chapter_topic": "展望未来-合作维度2（场景构建）",
+      "resource": {
+        "type": "image",
+        "url": "/images/scene_build.png",
+        "description": "场景构建服务"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "其次，公司已可为智慧园区量身定制L1到L4级的室内外场景构建服务，全方位降低项目前期投入门槛。",
+          "duration": 13,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_019_01.mp3",
+          "performance_code": null,
+          "performance_desc": null
+        }
+      ]
+    },
+    {
+      "chapter_id": 20,
+      "chapter_topic": "展望未来-合作维度3（昇腾）",
+      "resource": {
+        "type": "image",
+        "url": "/images/ascend_coop.png",
+        "description": "昇腾合作生态"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "更长远地，睿司智能体集群也可与华为昇腾AI算力底座深度融合，共同构筑国产、安全、可靠的智慧园区“鸿蒙+昇腾”双生态数字孪生底座。",
+          "duration": 18,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_020_01.mp3",
+          "performance_code": "serious",
+          "performance_desc": "表情-认真"
+        }
+      ]
+    },
+    {
+      "chapter_id": 21,
+      "chapter_topic": "展望未来-总结与感谢",
+      "resource": {
+        "type": "image",
+        "url": "/images/cooperation_summit.jpg",
+        "description": "合作峰会合影"
+      },
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "我们相信，凭借近二十年的行业实践，结合华为强大的ICT技术与生态平台，双方完全有能力携手打造更多让客户满意的标杆项目。",
+          "duration": 14,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_021_01.mp3",
+          "performance_code": null,
+          "performance_desc": null
+        },
+        {
+          "segment_id": 2,
+          "text": "再次感谢各位的到访，欢迎接下来的提问与交流。",
+          "duration": 7,
+          "audio": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_021_02.mp3",
+          "performance_code": "bow",
+          "performance_desc": "动作-鞠躬"
+        }
+      ]
+    }
+  ]
+}

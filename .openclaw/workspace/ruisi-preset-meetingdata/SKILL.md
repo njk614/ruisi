@@ -252,7 +252,7 @@ python scripts/rank_display_resources.py --data-root <SimulatedData> --query "<m
 资源路径强制规则：
 
 - 演示文稿、讲解脚本 Markdown、讲解脚本 JSON 中使用到的每个展示资源，`资源URL` / `resource.url` 必须原样使用 `resource_catalog.json` 中对应资源的 `file_path` 字段。
-- 如果 `file_path` 是完整网络地址，例如 `http://172.16.1.98:8888/.../xxx.png`，必须完整写入，不得改写为 `/images/xxx.png`、相对路径或本地路径。
+- 如果 `file_path` 是完整网络地址，例如 `http://172.16.1.138:8888/.../xxx.png`，必须完整写入，不得改写为 `/images/xxx.png`、相对路径或本地路径。
 - 不得编造资源路径，也不得根据文件名自行拼接路径。
 
 ### 7. 讲解主体身份强制规则

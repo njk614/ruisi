@@ -13,9 +13,9 @@ metadata:
     emoji: '📅'
     requires:
       bins:
-        - python
+        - python3
 dependencies:
-  - command: 'python'
+  - command: 'python3'
     min_version: '3.9'
 ---
 
@@ -57,7 +57,7 @@ dependencies:
 3. 保存用户原始输入到 `input/initial_params.json`，记录 `execution.log`。
 4. 若用户还未选择候选时段，运行：
    ```bash
-   python scripts/select_meeting_slot.py --output-path <execution_dir_path>/artifacts/available_slots.json
+   python3 scripts/select_meeting_slot.py --output-path <execution_dir_path>/artifacts/available_slots.json
    ```
    可按需增加 `--date-from YYYY-MM-DD`、`--days 3`、`--preferred-room-name 大会议室`。
 5. 向用户原样展示 `available_slots.json` 的 `display_text`。该文本已按会议室分组展示 `options[]` 编号，并在末尾提示“请回复**编号**，选择其他日期请直接回复“0””。用户选择编号后，记录 `available_slot`、`room_id`、`room_name`。
@@ -65,14 +65,14 @@ dependencies:
 7. 询问具体会议时间段；必须包含开始和结束时间，并完全落在所选 `available_slot.slot` 内。
 8. 若用户已提供完整时间范围但未确定会议室，运行：
    ```bash
-   python scripts/query_free_rooms.py --time-range "<slot>" --output-path <execution_dir_path>/artifacts/available_rooms.json
+   python3 scripts/query_free_rooms.py --time-range "<slot>" --output-path <execution_dir_path>/artifacts/available_rooms.json
    ```
    多个会议室可用时，让用户选择一个。
 9. 依次补齐 `booker_name`、`internal_attendees`、`customer_attendees`、`meeting_topic`；一次只问一个缺失字段。
 10. 创建前向用户确认时间、会议室、预定人、我方参会人员、客户方参会人员和会议主题；只有回复 `Y` 才继续。
 11. 用户确认后运行：
     ```bash
-    python scripts/create_booking.py --room-id "<room_id>" --slot "<slot>" --booker-name "<booker_name>" --internal-attendees "<names>" --customer-attendees "<names-or-无>" --meeting-topic "<meeting_topic>" --output-path <execution_dir_path>/output/booking_info.json
+    python3 scripts/create_booking.py --room-id "<room_id>" --slot "<slot>" --booker-name "<booker_name>" --internal-attendees "<names>" --customer-attendees "<names-or-无>" --meeting-topic "<meeting_topic>" --output-path <execution_dir_path>/output/booking_info.json
     ```
     若只有会议室名称，可用 `--room-name "<room_name>"` 代替 `--room-id`。
 12. 读取 `output/booking_info.json`，对 `internal_attendees` 中每个人运行 `send_internal_message.py`，输出 `artifacts/message_<index>.json`。

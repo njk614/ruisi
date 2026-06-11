@@ -21,14 +21,14 @@ zones:
     lighting: ['qt'] # 灯光设备ID列表（需替换为实际ID）
     hvac: ['wkqqt1', 'wkqqt2'] # 空调设备ID列表（需替换为实际ID）
     feedback_targets: ['P01']
-  meeting_room:
-    zone_id: 'meeting_room'
+  meeting-room-large:
+    zone_id: 'meeting-room-large'
     zone_name: '大会议室'
     lighting: ['dhys'] # 灯光设备ID列表（需替换为实际ID）
     hvac: ['wkqdhys'] # 空调设备ID列表（需替换为实际ID）
     feedback_targets: ['P01', 'P02']
-  main_hall:
-    zone_id: 'main_hall'
+  main-hall:
+    zone_id: 'main-hall'
     zone_name: '主场'
     lighting: ['xmpt', 'xs', 'zjsc'] # 灯光设备ID列表（需替换为实际ID）
     hvac: ['wkqxmb', 'wkqxsb', 'wkqxmpt', 'wkqcpb'] # 空调设备ID列表（需替换为实际ID）

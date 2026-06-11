@@ -23,7 +23,7 @@ def send_feedback(zone, message):
     向指定区域的反馈设备推送消息
 
     Args:
-        zone: 区域 (entrance/meeting_room/main_hall)
+        zone: 区域 (entrance/meeting-room-large/main-hall)
         message: 反馈消息内容
 
     Returns:

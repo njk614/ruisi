@@ -84,7 +84,8 @@ def read_yaml(path: Path) -> dict[str, Any]:
 
 
 def load_config() -> dict[str, Any]:
-    config_path = Path(os.environ.get("FREE_QA_CONFIG", SKILL_DIR / "config.yaml")).expanduser()
+    config_value = os.environ.get("RUISI_FREE_QA_CONFIG") or os.environ.get("FREE_QA_CONFIG")
+    config_path = Path(config_value or SKILL_DIR / "config.yaml").expanduser()
     if not config_path.is_absolute():
         config_path = SKILL_DIR / config_path
     if not config_path.exists():

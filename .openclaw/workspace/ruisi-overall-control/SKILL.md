@@ -96,14 +96,14 @@ dependencies:
 
 **当前版本固定使用大会议室**：
 
-- 无论输入参数 `zone` 为何值，或后续解析/确认的结果如何，最终执行时统一使用 `meeting_room`
-- 在步骤 2A/2B 中会正常进行区域解析和确认（保留完整逻辑），但在实际调用设备接口前会被强制覆盖为 `meeting_room`
+- 无论输入参数 `zone` 为何值，或后续解析/确认的结果如何，最终执行时统一使用 `meeting-room-large`
+- 在步骤 2A/2B 中会正常进行区域解析和确认（保留完整逻辑），但在实际调用设备接口前会被强制覆盖为 `meeting-room-large`
 - 此设置为临时方案，后期支持多区域时只需移除此覆盖逻辑
 
 记录：
 
 ```
-[<ISO时间>] 区域设置 | 当前版本强制使用: meeting_room（大会议室）
+[<ISO时间>] 区域设置 | 当前版本强制使用: meeting-room-large（大会议室）
 ```
 
 **1.6 初始化 execution.log**
@@ -119,12 +119,12 @@ dependencies:
 **2.1 语义解析**
 利用 Agent 自身的语义理解能力解析 `user_text`，提取以下字段：
 
-| 提取字段      | 说明                                                         | 示例             |
-| ------------- | ------------------------------------------------------------ | ---------------- |
-| `device_type` | 设备类型：`lighting` / `hvac` / `twinscreen`                 | `”lighting”`     |
-| `action`      | 控制动作：`on`(开) / `off`(关) / `set_temperature`(设置温度) | `”on”`           |
-| `value`       | 参数值（可选），如温度数值、设备ID、场景名称                 | `24`             |
-| `zone`        | 区域（可选），从指令文本中提取                               | `”meeting_room”` |
+| 提取字段      | 说明                                                         | 示例                   |
+| ------------- | ------------------------------------------------------------ | ---------------------- |
+| `device_type` | 设备类型：`lighting` / `hvac` / `twinscreen`                 | `”lighting”`           |
+| `action`      | 控制动作：`on`(开) / `off`(关) / `set_temperature`(设置温度) | `”on”`                 |
+| `value`       | 参数值（可选），如温度数值、设备ID、场景名称                 | `24`                   |
+| `zone`        | 区域（可选），从指令文本中提取                               | `”meeting-room-large”` |
 
 **记录 execution.log**：
 
@@ -146,7 +146,7 @@ dependencies:
 
 ```json
 // current_context.json 格式
-{ "current_zone": "meeting_room" }
+{ "current_zone": "meeting-room-large" }
 ```
 
 - 文件存在且含有效值 → 使用该值作为默认区域
@@ -168,45 +168,45 @@ dependencies:
 
 **2.2.3 强制覆盖为大会议室**
 
-**当前版本限制**：无论上述步骤解析或确认的 zone 是什么，强制设置为 `meeting_room`。
+**当前版本限制**：无论上述步骤解析或确认的 zone 是什么，强制设置为 `meeting-room-large`。
 
 ```
-zone = "meeting_room"  // 强制覆盖
+zone = "meeting-room-large"  // 强制覆盖
 ```
 
 记录：
 
 ```
-[<ISO时间>] 区域覆盖 | 原值: <原zone> | 强制设为: meeting_room
+[<ISO时间>] 区域覆盖 | 原值: <原zone> | 强制设为: meeting-room-large
 ```
 
 **2.3 构建设备控制请求**
-根据 `device_type`、`action`、`value`、`zone`（此时已是 meeting_room），按以下规则构造请求体：
+根据 `device_type`、`action`、`value`、`zone`（此时已是 meeting-room-large），按以下规则构造请求体：
 
 **照明控制（device_type="lighting"）**
 
 调用 `mqtt_controller.py` 时的 JSON 格式：
 
-| 用户意图       | JSON 参数                                                                                                    |
-| -------------- | ------------------------------------------------------------------------------------------------------------ |
-| 打开区域所有灯 | `{"device_type":"lighting", "zone":"meeting_room", "action":"on", "all":true}`                               |
-| 打开指定设备   | `{"device_type":"lighting", "zone":"meeting_room", "action":"on", "device_ids":["light_001"], "all":false}`  |
-| 关闭区域所有灯 | `{"device_type":"lighting", "zone":"meeting_room", "action":"off", "all":true}`                              |
-| 关闭指定设备   | `{"device_type":"lighting", "zone":"meeting_room", "action":"off", "device_ids":["light_001"], "all":false}` |
+| 用户意图       | JSON 参数                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 打开区域所有灯 | `{"device_type":"lighting", "zone":"meeting-room-large", "action":"on", "all":true}`                               |
+| 打开指定设备   | `{"device_type":"lighting", "zone":"meeting-room-large", "action":"on", "device_ids":["light_001"], "all":false}`  |
+| 关闭区域所有灯 | `{"device_type":"lighting", "zone":"meeting-room-large", "action":"off", "all":true}`                              |
+| 关闭指定设备   | `{"device_type":"lighting", "zone":"meeting-room-large", "action":"off", "device_ids":["light_001"], "all":false}` |
 
 **空调控制（device_type="hvac"）**
 
 调用 `mqtt_controller.py` 时的 JSON 格式：
 
-| 用户意图         | JSON 参数                                                                                                                           |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 开空调（所有）   | `{"device_type":"hvac", "zone":"meeting_room", "action":"on", "all":true}`                                                          |
-| 开空调（指定）   | `{"device_type":"hvac", "zone":"meeting_room", "action":"on", "device_ids":["ac_001"], "all":false}`                                |
-| 关空调（所有）   | `{"device_type":"hvac", "zone":"meeting_room", "action":"off", "all":true}`                                                         |
-| 关空调（指定）   | `{"device_type":"hvac", "zone":"meeting_room", "action":"off", "device_ids":["ac_001"], "all":false}`                               |
-| 设置温度（所有） | `{"device_type":"hvac", "zone":"meeting_room", "action":"set_temperature", "temperature":24, "all":true}`                           |
-| 设置温度（指定） | `{"device_type":"hvac", "zone":"meeting_room", "action":"set_temperature", "temperature":24, "device_ids":["ac_001"], "all":false}` |
-| 空调24度（组合） | 先调用 `action:"on"` 打开空调，再调用 `action:"set_temperature", temperature:24` 设温度                                             |
+| 用户意图         | JSON 参数                                                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 开空调（所有）   | `{"device_type":"hvac", "zone":"meeting-room-large", "action":"on", "all":true}`                                                          |
+| 开空调（指定）   | `{"device_type":"hvac", "zone":"meeting-room-large", "action":"on", "device_ids":["ac_001"], "all":false}`                                |
+| 关空调（所有）   | `{"device_type":"hvac", "zone":"meeting-room-large", "action":"off", "all":true}`                                                         |
+| 关空调（指定）   | `{"device_type":"hvac", "zone":"meeting-room-large", "action":"off", "device_ids":["ac_001"], "all":false}`                               |
+| 设置温度（所有） | `{"device_type":"hvac", "zone":"meeting-room-large", "action":"set_temperature", "temperature":24, "all":true}`                           |
+| 设置温度（指定） | `{"device_type":"hvac", "zone":"meeting-room-large", "action":"set_temperature", "temperature":24, "device_ids":["ac_001"], "all":false}` |
+| 空调24度（组合） | 先调用 `action:"on"` 打开空调，再调用 `action:"set_temperature", temperature:24` 设温度                                                   |
 
 **孪易大屏控制（device_type="twinscreen"）**
 
@@ -251,13 +251,13 @@ curl -sX POST http://127.0.0.1:18900/send \
 
 ```bash
 # 开灯
-python scripts/mqtt_controller.py '{ "device_type":"lighting", "zone":"meeting_room", "action":"on", "all":true }'
+python scripts/mqtt_controller.py '{ "device_type":"lighting", "zone":"meeting-room-large", "action":"on", "all":true }'
 
 # 开空调
-python scripts/mqtt_controller.py '{ "device_type":"hvac", "zone":"meeting_room", "action":"on", "all":true }'
+python scripts/mqtt_controller.py '{ "device_type":"hvac", "zone":"meeting-room-large", "action":"on", "all":true }'
 
 # 设置温度
-python scripts/mqtt_controller.py '{ "device_type":"hvac", "zone":"meeting_room", "action":"set_temperature", "temperature":24, "all":true }'
+python scripts/mqtt_controller.py '{ "device_type":"hvac", "zone":"meeting-room-large", "action":"set_temperature", "temperature":24, "all":true }'
 ```
 
 **超时**：5 秒。**重试**：失败后重试 1 次。
@@ -265,7 +265,7 @@ python scripts/mqtt_controller.py '{ "device_type":"hvac", "zone":"meeting_room"
 记录 execution.log：
 
 ```
-[<ISO时间>] 设备调用 | type: <device_type> | zone: meeting_room | action: <action> | status: success
+[<ISO时间>] 设备调用 | type: <device_type> | zone: meeting-room-large | action: <action> | status: success
 ```
 
 **2.4 等待并解析响应**
@@ -305,12 +305,12 @@ python scripts/mqtt_controller.py '{ "device_type":"hvac", "zone":"meeting_room"
     "device_type": "lighting",
     "action": "turn_off",
     "value": null,
-    "zone": "meeting_room"
+    "zone": "meeting-room-large"
   },
   "api_requests": [
     {
       "url": "http://127.0.0.1:18900/api/lighting/control",
-      "body": { "zone": "meeting_room", "all": true, "action": "turn_off", "params": {} },
+      "body": { "zone": "meeting-room-large", "all": true, "action": "turn_off", "params": {} },
       "response": { "success": true, "message": "指令已执行" }
     }
   ],
@@ -341,16 +341,16 @@ python scripts/mqtt_controller.py '{ "device_type":"hvac", "zone":"meeting_room"
 
 **3.0.1 强制覆盖为大会议室**
 
-**当前版本限制**：无论输入参数 `zone` 是什么，强制设置为 `meeting_room`。
+**当前版本限制**：无论输入参数 `zone` 是什么，强制设置为 `meeting-room-large`。
 
 ```
-zone = "meeting_room"  // 强制覆盖
+zone = "meeting-room-large"  // 强制覆盖
 ```
 
 记录：
 
 ```
-[<ISO时间>] 区域覆盖 | 原值: <原zone> | 强制设为: meeting_room
+[<ISO时间>] 区域覆盖 | 原值: <原zone> | 强制设为: meeting-room-large
 ```
 
 **3.1 执行固定调节动作**
@@ -360,7 +360,7 @@ zone = "meeting_room"  // 强制覆盖
 1. **开启灯光**：打开大会议室的所有灯光
 2. **开启空调并设置温度**：打开大会议室空调并设置为 24°C
 
-**zone 固定使用 `meeting_room`**（大会议室）。
+**zone 固定使用 `meeting-room-large`**（大会议室）。
 
 **3.2 调用设备接口**
 
@@ -369,37 +369,37 @@ zone = "meeting_room"  // 强制覆盖
 **① 开启灯光**
 
 ```bash
-python scripts/mqtt_controller.py '{"device_type":"lighting","zone":"meeting_room","action":"on","all":true}'
+python scripts/mqtt_controller.py '{"device_type":"lighting","zone":"meeting-room-large","action":"on","all":true}'
 ```
 
 记录：
 
 ```
-[<ISO时间>] 设备调用 | type: lighting | zone: meeting_room | action: on | status: success
+[<ISO时间>] 设备调用 | type: lighting | zone: meeting-room-large | action: on | status: success
 ```
 
 **② 开启空调**
 
 ```bash
-python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting_room","action":"on","all":true}'
+python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting-room-large","action":"on","all":true}'
 ```
 
 记录：
 
 ```
-[<ISO时间>] 设备调用 | type: hvac | zone: meeting_room | action: on | status: success
+[<ISO时间>] 设备调用 | type: hvac | zone: meeting-room-large | action: on | status: success
 ```
 
 **③ 设置空调温度为 24°C**
 
 ```bash
-python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting_room","action":"set_temperature","temperature":24,"all":true}'
+python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting-room-large","action":"set_temperature","temperature":24,"all":true}'
 ```
 
 记录：
 
 ```
-[<ISO时间>] 设备调用 | type: hvac | zone: meeting_room | action: set_temperature | temperature: 24 | status: success
+[<ISO时间>] 设备调用 | type: hvac | zone: meeting-room-large | action: set_temperature | temperature: 24 | status: success
 ```
 
 **超时与重试**：
@@ -426,7 +426,7 @@ python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting_room","
 ```json
 {
   "mode": "auto",
-  "zone": "meeting_room",
+  "zone": "meeting-room-large",
   "visitor_count": 3,
   "actions": [
     { "device_type": "lighting", "action": "on", "status": "success" },
@@ -558,9 +558,9 @@ python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting_room","
 
 **处理流程**：
 
-1. 语义解析 → `{device_type: "lighting", action: "turn_off", zone: "meeting_room"}`
+1. 语义解析 → `{device_type: "lighting", action: "turn_off", zone: "meeting-room-large"}`
 2. zone 已确定，跳过区域确认
-3. 调用 `/api/lighting/control`：`{"zone":"meeting_room","all":true,"action":"turn_off","params":{}}`
+3. 调用 `/api/lighting/control`：`{"zone":"meeting-room-large","all":true,"action":"turn_off","params":{}}`
 4. 向 P01 + P02 发送：`"已为您关闭大会议室灯光。"`
 
 **输出**：
@@ -579,7 +579,7 @@ python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting_room","
 ```json
 {
   "trigger_type": "auto",
-  "zone": "meeting_room",
+  "zone": "meeting-room-large",
   "visitor_count": 3,
   "business_task": "visit-zhihuiyun"
 }
@@ -637,7 +637,7 @@ python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting_room","
 ```json
 {
   "trigger_type": "auto",
-  "zone": "main_hall",
+  "zone": "main-hall",
   "visitor_count": 5
 }
 ```

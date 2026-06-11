@@ -1,188 +1,406 @@
 ---
 name: ruisi-explanation-service
-description: 讲解控制 Skill。接收客户端控制消息（语义文本为主），按内容分流为开始讲解、暂停讲解、继续讲解三类，并调用对应 Python 接口。ruisi-free-qa 在问答前通过 pause_explanation.py 调用本 Skill 触发暂停。兼容历史 ruisi-free-qa 固定结构控制消息。Use when the explanation agent needs to react to start/pause/resume control intents from client messages.
+description: 接收“开始演示、暂停演示、继续演示、跳转到第N章”等自然语言控制指令，自动读取 meeting_index.json 定位当前大会议室会议的 PresentationScript.json，并按 duration 定时向 P02 推送数字人模拟消息，同时通过 HTTP 调用真实内容展示器 /api/show；也支持单段 chapters/segments 数据块转发。Use when a user controls an automated demo sequence, sends digital-human messages to P02 through XMPP, and controls the content display over HTTP.
+level: L1
 allowed-tools:
   - bash
-  - read_file
-  - write_file
-metadata:
-  openclaw:
-    version: '1.0.0'
-    author: 'your_name'
-    level: 'L1'
-    emoji: '🎛️'
-    requires:
-      bins:
-        - python3
+  - python
 ---
 
-# 讲解控制服务
+# 讲解服务控制 Skill
+
+## 当前定位
+
+当前睿司数字人接口尚未完全就绪，数字人消息仍通过 P02 模拟；内容展示器已改为真实 HTTP 对接。
+
+核心能力：
+
+- 自动演示：用户说“开始演示”时，入口脚本读取 `meeting_index.json`，筛选“大会议室”且当前时间落在 `time_range` 内的会议，提取 `booking_id` 和 `presentation_script_path`；后台脚本读取该会议的 `PresentationScript.json`，先调用内容展示器 `/api/playlist/load`，再按 `chapters -> segments` 顺序推进，每段发送后等待该段 `duration` 秒。
+- 演示控制：用户说“暂停演示”“继续演示”“停止演示”“跳转到第N章”时，入口脚本向后台推送脚本写入控制命令。
+- 控制优先：OpenClaw 收到任何消息时，若后台演示正在运行，入口脚本会先临时暂停后续推送，再解析消息语义并执行对应动作。
+- 状态记录：后台脚本把当前发送到第几章第几段写入 `runtime/demo_state.json`。
+- 强制暂停：入口脚本会写入 `runtime/demo_pause.flag`，后台脚本在发送前、两条消息之间、等待下一段时都会检查它。
+- 单段转发：仍支持手动输入 `chapters -> segments` 数据块，立即向 P02 发送数字人消息，并向内容展示器调用 `/api/show`。
+
+Skill 真实调用内容展示器 HTTP API；数字人仍通过 P02/XMPP 模拟。
 
 ## 触发条件
 
-- 处理来自客户端的讲解控制消息。
-- 当消息语义命中开始讲解、暂停讲解、继续讲解时，进入本 Skill。
-- 当收到 ruisi-free-qa 通过 `pause_explanation.py` 转发的暂停消息（默认“暂停讲解”）时，进入本 Skill。
-- 兼容历史 ruisi-free-qa 固定结构控制消息（暂停/恢复结构体）。
-- 不依赖发送方账号做拦截，按消息内容识别并触发。
+当用户在 OpenClaw 聊天界面输入以下任意内容时触发：
 
-## 消息分类
+1. `开始演示`、`暂停演示`、`继续演示`、`停止演示`、`跳转到第N章`、`演示状态` 等自然语言控制指令。
+2. 合法 JSON，且包含 `chapters` 字段。
+3. JSON 片段，形如 `"chapters": [...]`。
 
-### 继续讲解
+## 必须遵守的约定
 
-出现以下任意词语或短句即判定为继续讲解：
+- Skill 不直接执行转发逻辑；必须调用 `scripts/send_message.py`。
+- Skill 只把用户原始输入传给脚本，并将脚本 stdout 原样作为最终回复。
+- 最终回复用户时，只输出一个 JSON 对象；不要输出 Markdown 代码块、自然语言解释、日志、标题或额外空行。
+- 脚本负责解析输入、识别意图、构造消息、调用 `/send`、重试和输出结果。
+- 当前阶段数字人只做模拟转发；内容展示器真实调用 HTTP API。
+- 自动演示后台脚本为 `scripts/run_demo_sequence.py`。
+- 运行态文件写入 `runtime/`，部署包不包含运行态文件。
+- 不生成 `manifest.json`，不写留痕目录。
 
-- 继续演示
-- 继续讲解
-- 继续播放
-- 继续推送
-- 恢复演示
-- 恢复讲解
-- 恢复播放
-- 接着演示
-- 接着讲解
-- 可以继续
-- 继续吧
-- 继续
-- 接着
-- 恢复
-- 继续一下
-- 继续说
-- 接着说
-- 恢复一下
+## 执行步骤
 
-### 暂停讲解
-
-出现以下任意词语或短句即判定为暂停讲解：
-
-- 暂停
-- 暂停讲解
-- 暂停演示
-- 先暂停
-- 停一下
-- 稍等
-- 等一下
-- 不要讲了
-- 先别讲
-- 停止讲解
-- 暂停播放
-
-ruisi-free-qa 默认会发送以下语义暂停消息：
-
-- 暂停讲解
-
-兼容历史 ruisi-free-qa 固定结构暂停消息：
-
-- 【说明：当前消息最终发送给“讲解程序”，用于暂停当前讲解及讲解内容的推送】
-- {"status":"pause"}
-
-### 开始讲解
-
-出现以下任意词语或短句即判定为开始讲解：
-
-- 开始讲解
-- 开始演示
-- 开始播放
-- 开始推送
-- 开讲
-- 开始吧
-- 现在开始
-- 讲解开始
-
-## 固定结构消息识别（历史兼容）
-
-- 若消息包含 ruisi-free-qa 的讲解程序说明文本，并且状态体是 {"status":"pause"}，按暂停讲解处理。
-- 若消息包含 ruisi-free-qa 的讲解程序说明文本，并且状态体是 {"status":"resume"}，按继续讲解处理。
-
-## 编排步骤
-
-1. 接收输入参数：sender_jid、message、message_id(建议必传)、session_id(可选)。
-2. 根据消息内容分类：start/pause/resume。
-3. 调用对应 Python 接口：
-
-- start -> 调用开始讲解接口
-- pause -> 调用暂停讲解接口
-- resume -> 调用继续讲解接口
-
-4. 输出标准 JSON：status、action、message、session_id。
-
-## 状态与定时发送机制
-
-- 本 Skill 采用"控制命令 + 常驻发送进程"架构。
-- `start`：加载本地数据文件，设置 mode=running，启动定时发送守护进程；守护进程拿到讲解内容后立即发送第一页，不额外等待。
-- `pause`：将 mode 设为 paused，守护进程停止推进发送游标。
-- `resume`：将 mode 恢复为 running，守护进程按保存的 index 立即继续发送，不等待上一段时长倒计时补完。
-- 发送进度 index、当前模式 mode、数据文件路径和发送间隔会写入本地状态文件：`runtime/explanation_state.json`。
-- 因为状态是落盘的，不依赖一次 Skill 触发内存，所以可以跨多次触发保持状态。
-- 每页时长计时从该页内容发出后才开始，仅在未被 pause/resume 等控制指令打断时按时长自然推进。
-- 全部页码发送完成后仅切换为 paused，不追加任何结束致谢文案。
-
-## 数据文件
-
-- 默认讲解数据文件优先：`~/.openclaw/workspace/SimulatedData/PresentationScript.md`
-- 若默认优先路径不存在，自动回退到：`data/PresentationScript.md`
-- 可通过 `EXPLAIN_DATA_FILE` 显式覆盖路径。
-
-## 运行脚本
-
-- 控制器：`scripts/explain_controller.py`
-- 守护进程：`scripts/explanation_dispatch_daemon.py`
-- 消息路由入口：`scripts/explanation_message_service.py`
-
-## 环境变量
-
-- `EXPLAIN_DATA_FILE`：讲解数据文件路径。
-- `EXPLAIN_INTERVAL_SECONDS`：默认发送间隔秒数。
-- `EXPLAIN_TARGET_JID`：目标 Agent JID。
-- `EXPLAIN_FROM_ACCOUNT`：发送方账号。
-- `EXPLAIN_SEND_API_URL`：消息发送接口 URL；未配置时走本地 mock 发送（仅日志）。
-- `EXPLAIN_SEND_API_TOKEN`：发送接口鉴权 Token（可选）。
-
-## 输入参数
-
-| 参数名     | 类型   | 必填 | 说明                               |
-| ---------- | ------ | ---- | ---------------------------------- |
-| sender_jid | string | 否   | 发送方账号（可选，仅用于留痕透传） |
-| message    | string | 是   | 接收到的文本消息                   |
-| message_id | string | 否   | 上游消息唯一标识；传入后可启用去重 |
-| session_id | string | 否   | 会话唯一标识，用于追踪             |
-
-## 输出参数
-
-| 参数名     | 类型   | 说明                              |
-| ---------- | ------ | --------------------------------- |
-| status     | string | success 或 ignored 或 failed      |
-| action     | string | start 或 pause 或 resume 或 none  |
-| message    | string | 执行结果描述                      |
-| message_id | string | 回传上游消息 ID（仅在传入时返回） |
-| sender_jid | string | 回传发送方账号（仅在传入时返回）  |
-| session_id | string | 会话标识                          |
-
-## Python 服务入口
+1. 获取用户输入的原始字符串，不要自行改写字段。
+2. 调用脚本，将原始输入作为 stdin 传入：
 
 ```bash
-python scripts/explanation_message_service.py --sender-jid "a01@im.tuguan.net" --message "继续讲解"
+python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message.py
 ```
 
-## 处理约束
+3. 脚本按输入类型处理：
+   - `开始演示`：启动 `scripts/run_demo_sequence.py` 后台进程。
+   - `暂停演示` / `继续演示` / `停止演示` / `跳转到第N章`：写入 `runtime/demo_command.json`，由后台脚本响应。
+   - `演示状态`：读取 `runtime/demo_state.json` 并返回当前章/段状态。
+   - `chapters` 数据块：给 P02 发送数字人消息，并调用内容展示器 `/api/show`。
+   - 自然语言章节跳转：演示运行中写入 jump 命令，后台脚本定位目标章节第一段并继续推送。
+   - 其他自然语言：无法识别时返回失败；若演示正在运行，会先临时暂停后续推送。
+4. Skill 必须原样返回脚本 stdout。
 
-- 最终输出必须是纯 JSON，不要输出额外文本。
-- 若消息未匹配三类意图，返回 ignored，不做任何接口调用。
-- 若接口调用失败，返回 failed 并包含错误信息。
-- 支持 dry-run 模式用于联调验证，不触发真实接口。
-- 若 message_id 重复，返回 ignored 并跳过接口调用，防止同一上游消息重复触发。
+## 输出
+
+成功时只输出：
+
+```json
+{ "status": "success", "message": "讲解已推送" }
+```
+
+失败时只输出：
+
+```json
+{ "status": "failed", "message": "具体错误原因" }
+```
+
+查询演示状态时会返回：
+
+```json
+{ "status": "success", "message": "演示状态", "state": { "status": "running", "chapter_index": 0, "segment_index": 1 } }
+```
+
+## 自动演示控制
+
+### 开始演示
+
+输入：
+
+```text
+开始演示
+```
+
+动作：
+
+- 启动 `scripts/run_demo_sequence.py` 后台进程。
+- 读取 `/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData/meeting_index.json`。
+- 筛选 `meeting_region == "大会议室"` 且当前时间落在 `time_range` 内的会议。
+- 提取 `booking_id` 作为内容展示器 `playlist_id`。
+- 读取该会议的 `presentation_script_path`，例如 `<booking_id>/PresentationScript.json`。
+- 从第 1 章第 1 段开始推送。
+- 每段向 P02 发送数字人消息、向内容展示器调用 `/api/show` 后，等待该段 `duration` 秒，再进入下一段。
+
+返回：
+
+```json
+{ "status": "success", "message": "演示已开始" }
+```
+
+该回执会第一时间返回，后台推送随后异步开始。
+
+为避免 P02 推送先于 OpenClaw 回执出现，入口脚本会给后台推送附加一个短暂延迟，默认 2 秒。
+
+### 暂停演示
+
+输入：
+
+```text
+暂停演示
+```
+
+第一时间返回：
+
+```json
+{ "status": "success", "message": "演示已暂停" }
+```
+
+动作：
+
+- 写入 `runtime/demo_command.json`：
+
+```json
+{ "command": "pause" }
+```
+
+- 写入 `runtime/demo_pause.flag`，后台脚本会在下一次检查点立即停止后续推送。
+- 后台脚本停止进入后续段落，状态变为 `paused`。
+
+### 继续演示
+
+输入：
+
+```text
+继续演示
+```
+
+第一时间返回：
+
+```json
+{ "status": "success", "message": "演示已恢复" }
+```
+
+动作：
+
+- 写入 `resume` 命令。
+- 后台脚本从暂停位置继续。
+
+### 跳转章节
+
+输入：
+
+```text
+跳转到第7章
+```
+
+第一时间返回：
+
+```json
+{ "status": "success", "message": "正在跳转指定章节" }
+```
+
+动作：
+
+- 写入 `jump` 命令。
+- 后台脚本定位到第 7 章第 1 段，从那里继续推送。
+- 如果上一轮演示已经完整播放到 `completed`，但未执行“停止演示”，入口脚本会重新启动后台推送脚本，并从第 7 章第 1 段开始继续往后推送。
+- completed 后跳转会严格校验目标章节；如果章节不存在，直接返回失败，不允许回退到第一章。
+
+### 查询状态
+
+输入：
+
+```text
+演示状态
+```
+
+返回当前后台脚本状态，例如：
+
+```json
+{
+  "status": "success",
+  "message": "演示状态",
+  "state": { "status": "running", "chapter_index": 6, "segment_index": 0, "chapter_id": 7, "segment_id": 1, "chapter_topic": "华为战略升级-图片1" }
+}
+```
+
+### 停止演示
+
+输入：
+
+```text
+停止演示
+```
+
+动作：
+
+- 写入 `stop` 命令。
+- 等待后台脚本优雅退出；如果短时间内仍未退出，入口脚本会根据 `runtime/demo_state.json` 中记录的 PID 主动关闭后台进程。
+- 调用内容展示器 `POST /api/stop`，停止当前显示并回到未加载/待机状态。
+- 清理 `runtime/demo_command.json`、`runtime/demo_pause.flag`、`runtime/demo.pid`，保留 `runtime/demo_state.json` 记录最终停止状态。
+
+## A01 提取数据块
+
+输入可以是完整 JSON：
+
+```json
+{
+  "chapters": [
+    {
+      "chapter_id": 1,
+      "segments": [
+        {
+          "segment_id": 1,
+          "text": "尊敬的华为各位领导、专家，大家好！我是公司产品的AI接待助理。",
+          "duration": 6,
+          "audio": "audio/audio_001_01.mp3",
+          "performance_code": "bow",
+          "performance_desc": "动作-鞠躬"
+        }
+      ]
+    }
+  ]
+}
+```
+
+也可以是 JSON 片段：
+
+```json
+"chapters": [
+  {
+    "chapter_id": 1,
+    "segments": [
+      {
+        "segment_id": 1,
+        "text": "尊敬的华为各位领导、专家，大家好！我是公司产品的AI接待助理。",
+        "duration": 6,
+        "audio": "audio/audio_001_01.mp3",
+        "performance_code": "bow",
+        "performance_desc": "动作-鞠躬"
+      }
+    ]
+  }
+]
+```
+
+脚本会执行两类动作。
+
+数字人消息 body：
+
+```text
+【说明：当前消息最终发送给P02，用于“数字人”展示字幕和播报语音】
+{"messagetype":"bot","data":{"messageId":"section-1-1","text":"[action:bow]尊敬的华为各位领导、专家，大家好！我是公司产品的AI接待助理。","duration":6,"audioUrl":"http://192.168.1.254:8888/PresetMeetingData/audio/audio_001_01.mp3"}}
+```
+
+内容展示器 HTTP 请求：
+
+```http
+POST http://172.16.1.138:8088/api/show
+```
+
+请求体：
+
+```json
+{ "chapter_index": 0, "segment_index": 0, "show_subtitle": true }
+```
+
+数字人消息从第一个 `segment` 抽取并转换：
+
+- `messageId`：`section-章节ID-段落ID`
+- `text`：`[action:表演动作指令]` + 完整段落文本；若 `performance_code` 为空，则不添加 action 前缀
+- `duration`：段落时长
+- `audioUrl`：音频完整路径，默认前缀为 `http://192.168.1.254:8888/PresetMeetingData/`
+
+内容展示器消息中，`chapter_index` 由 `chapter_id - 1` 得到，`segment_index` 由 `segment_id - 1` 得到。
+
+## 自然语言章节跳转
+
+当演示正在运行，用户表达“跳转/切换/播放/看看某个章节”时，入口脚本会写入 jump 命令，后台脚本定位目标章节的第一个 `segment`，发送数字人消息并调用内容展示器 `/api/show`。
+
+示例输入：
+
+```text
+跳转到第2章
+```
+
+数字人消息 body：
+
+```text
+【说明：当前消息最终发送给P02，用于“数字人”展示字幕和播报语音】
+{"messagetype":"bot","data":{"messageId":"section-2-1","text":"[action:serious]我们在数字孪生领域深耕近二十年，积累了上千个落地项目经验，也早已深度融入华为的生态体系。","duration":10,"audioUrl":"http://192.168.1.254:8888/PresetMeetingData/audio/audio_002_01.mp3"}}
+```
+
+内容展示器 HTTP 请求：
+
+```http
+POST http://172.16.1.138:8088/api/show
+```
+
+请求体：
+
+```json
+{ "chapter_index": 1, "segment_index": 0, "show_subtitle": true }
+```
+
+也支持用章节标题关键词匹配，例如：
+
+```text
+切换到华为战略升级
+```
+
+## XMPP /send 请求格式
+
+数字人模拟消息会调用：
+
+```text
+http://127.0.0.1:18900/send
+```
+
+请求体：
+
+```json
+{ "jid": "niujunke@im.tuguan.net", "body": "<说明前缀>\n<JSON消息>", "from": "a01@im.tuguan.net" }
+```
+
+## 内容展示器 HTTP 对接
+
+脚本会调用内容展示器：
+
+```text
+http://172.16.1.138:8088
+```
+
+开始演示时先加载 playlist，`playlist_id` 来自当前会议的 `booking_id`：
+
+```http
+POST /api/playlist/load
+```
+
+请求体：
+
+```json
+{ "playlist_id": "<booking_id>" }
+```
+
+每段显示时调用：
+
+```http
+POST /api/show
+```
+
+请求体：
+
+```json
+{ "chapter_index": 0, "segment_index": 0, "show_subtitle": true }
+```
+
+默认配置：
+
+| 配置          | 值                            |
+| ------------- | ----------------------------- |
+| API           | `http://127.0.0.1:18900/send` |
+| 接收方 `jid`  | `niujunke@im.tuguan.net`      |
+| 发送方 `from` | `a01@im.tuguan.net`           |
+
+环境变量覆盖：
+
+| 环境变量                       | 默认值                                                            |
+| ------------------------------ | ----------------------------------------------------------------- |
+| `XMPP_SEND_API_URL`            | `http://127.0.0.1:18900/send`                                     |
+| `P02_JID`                      | `niujunke@im.tuguan.net`                                          |
+| `XMPP_FROM_ACCOUNT`            | `a01@im.tuguan.net`                                               |
+| `XMPP_SEND_API_TOKEN`          | 空                                                                |
+| `CONTENT_DISPLAY_BASE_URL`     | `http://172.16.1.138:8088`                                        |
+| `PRESET_MEETING_DATA_DIR`      | `/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData` |
+| `MEETING_INDEX_PATH`           | `<PRESET_MEETING_DATA_DIR>/meeting_index.json`                    |
+| `MEETING_ROOM_NAME`            | `大会议室`                                                        |
+| `SIM_CURRENT_TIME`             | 空；非空时用于本地测试当前时间，格式 `YYYY-MM-DD HH:MM`           |
+| `DIGITAL_HUMAN_AUDIO_BASE_URL` | `http://192.168.1.254:8888/PresetMeetingData/`                    |
+| `DEMO_ACK_DELAY_SECONDS`       | `2.0`                                                             |
 
 ## 错误处理
 
-| 场景           | 处理 | 返回                                                              |
-| -------------- | ---- | ----------------------------------------------------------------- |
-| message 为空   | 失败 | {"status":"failed","action":"none","message":"消息为空"}          |
-| 未匹配任何意图 | 忽略 | {"status":"ignored","action":"none","message":"未匹配到控制意图"} |
-| 接口调用异常   | 失败 | {"status":"failed","action":"<action>","message":"调用失败：..."} |
+| 错误场景                        | 输出 JSON                                                |
+| ------------------------------- | -------------------------------------------------------- |
+| 输入为空                        | `{"status":"failed","message":"无效的指令内容"}`         |
+| JSON 结构无法识别               | `{"status":"failed","message":"无法识别 JSON 指令结构"}` |
+| 自然语言无法识别                | `{"status":"failed","message":"无法识别控制意图"}`       |
+| XMPP 或内容展示器 HTTP 发送失败 | `{"status":"failed","message":"消息发送失败"}`           |
 
-## 建议接入方式
+## 测试方法
 
-- 将本 Skill 部署到 ruisi-explanation-service。
-- ruisi-free-qa 提问场景在生成答案前，调用 `python scripts/pause_explanation.py` 触发本 Skill 执行暂停。
-- 让消息事件回调在收到文本后调用上述 Python 入口。
-- 用环境变量配置实际接口命令，避免硬编码。
+本地 dry-run 测试不会真实发送到 P02，也不会真实调用内容展示器。JSON 输入建议通过 stdin 传给脚本，避免 PowerShell 命令行参数吞掉 JSON 双引号：
+
+```bash
+python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message.py --dry-run --payload "我想看看下一章"
+```
