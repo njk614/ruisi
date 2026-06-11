@@ -255,7 +255,17 @@ python scripts/rank_display_resources.py --data-root <SimulatedData> --query "<m
 - 如果 `file_path` 是完整网络地址，例如 `http://172.16.1.98:8888/.../xxx.png`，必须完整写入，不得改写为 `/images/xxx.png`、相对路径或本地路径。
 - 不得编造资源路径，也不得根据文件名自行拼接路径。
 
-### 7. 生成 PresentationDocument.md
+### 7. 讲解主体身份强制规则
+
+生成 `PresentationDocument.md`、`PresentationScript.md` 和 `PresentationScript.json` 时，必须遵守以下讲解主体规则：
+
+- 讲解主体固定为“数字冰雹AI助理”或“数字冰雹AI接待助理”。
+- 口播中的第一人称“我”只代表 AI 助理，不代表任何人类员工。
+- `booker_name` 和 `internal_attendees` 只能作为会议预约人、我方参会人员、陪同人员或后续答疑支持人员使用，严禁作为第一人称讲解人、汇报人或联合汇报人。
+- 不得出现“我是来自数字冰雹的某某”“我是数字冰雹的某某”“接下来由我和我的同事某某为大家汇报”“由某某和某某为大家汇报”等把我方参会人员写成讲解主体的表达。
+- 推荐开场口径：`尊敬的各位领导、专家，大家好！我是数字冰雹AI助理，接下来由我为大家介绍数字冰雹在数字孪生领域的技术积累与产品体系。`
+
+### 8. 生成 PresentationDocument.md
 
 读取 `references/presentation-template.md`。
 
@@ -272,8 +282,9 @@ PresetMeetingData/<meeting_id>/PresentationDocument.md
 - 产品和方案描述应基于本地知识库。
 - 使用 `resource_catalog.json` 中的展示资源，并原样保留每个资源的 `file_path` 完整地址。
 - 章节结构应便于后续转换成讲解脚本。
+- 必须遵守“讲解主体身份强制规则”，不得把我方参会人员写成口播讲解人。
 
-### 8. 生成 PresentationScript.md
+### 9. 生成 PresentationScript.md
 
 读取 `references/presentation-script-template.md`。
 
@@ -296,6 +307,7 @@ PresetMeetingData/<meeting_id>/PresentationScript.md
 - 资源 URL 必须原样来自 `resource_catalog.json.file_path`，完整网络地址不能截短。
 - 音频路径使用 `audio/audio_001_01.mp3` 形式。
 - 表演素材码只能使用模板中的合法值；不需要表演时填 `-`。
+- 必须遵守“讲解主体身份强制规则”，开场和后续第一人称均代表数字冰雹AI助理。
 
 校验：
 
@@ -305,7 +317,7 @@ python scripts/validate_presentation_script_md.py <PresentationScript.md>
 
 继续前必须修复全部校验问题。
 
-### 9. 汇总并等待用户确认
+### 10. 汇总并等待用户确认
 
 运行：
 
@@ -322,7 +334,7 @@ python scripts/summarize_outputs.py <meeting_id> --data-root <SimulatedData>
 
 等待用户确认。若用户提出修改意见，更新相关文档并重新校验。
 
-### 10. 将脚本 Markdown 转换为 JSON
+### 11. 将脚本 Markdown 转换为 JSON
 
 运行：
 
@@ -332,7 +344,7 @@ python scripts/script_md_to_json.py <PresentationScript.md> --output <Presentati
 
 JSON 必须与 Markdown 脚本内容保持一致。
 
-### 11. 生成或规划音频
+### 12. 生成或规划音频
 
 用户确认后回复：
 
@@ -349,7 +361,7 @@ python scripts/tts_generate_audio.py <PresentationScript.json> --meeting-dir <Pr
 TTS 当前尚未实现。除非真实 TTS 服务已经生成 MP3，否则不要声称音频文件或时长已经存在。
 当前阶段已在生成讲解脚本时写入模拟时长，因此不依赖真实音频回填时长。
 
-### 12. 回填音频时长
+### 13. 回填音频时长
 
 未来真实 MP3 文件存在后，可运行：
 
@@ -359,7 +371,7 @@ python scripts/fill_audio_durations.py <PresentationScript.json> --meeting-dir <
 
 如果未来真实音频时长与模拟时长不同，可用真实时长覆盖 JSON，并同步更新 Markdown 表格中的 `时长(s)` 字段。
 
-### 13. 更新会议索引
+### 14. 更新会议索引
 
 预置会议数据生成完成后，必须更新：
 
