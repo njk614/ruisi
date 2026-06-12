@@ -1,6 +1,6 @@
 ---
 name: ruisi-booking-meeting
-description: 处理会议预约、会议室查询、预定创建和内部提醒。使用本 Skill 完成可预约时段查询、冲突检查、写入 meetings.json、生成 booking_info.json，并为我方参会人员记录提醒。
+description: 处理会议预约、会议室查询、预定创建、已预定会议查询和内部提醒。使用本 Skill 完成可预约时段查询、冲突检查、写入 meetings.json、生成 booking_info.json，并为我方参会人员记录提醒；也支持查询已有预定会议（按日期、会议室、预定人或主题查“有哪些预定的会议”），只读不改写记录。
 version: 2.1.0
 author: 智能接待系统团队
 level: L1
@@ -23,7 +23,12 @@ dependencies:
 
 ## 触发
 
-用户表达预约会议、预定会议室、查询可用会议时段、创建会议预定或发送会议提醒时触发。
+用户表达预约会议、预定会议室、查询可用会议时段、创建会议预定或发送会议提醒时触发；用户表达查询已预定会议（如“有哪些预定的会议”“查一下今天/明天的会议安排”“大会议室都有什么会议”“牛军科预定了哪些会议”）时，走查询已预定会议流程。
+
+意图区分：
+
+- 含“空闲/有空/可约/可预约时段”等，指向**预约链路**的可用时段/空闲会议室查询（执行流程第 4、8 步）。
+- 含“有哪些会议/会议安排/已预定/查会议/谁定的”等，指向**查询已预定会议**（见下方“查询已预定会议”小节），只读不创建预定。
 
 ## 核心约束
 
@@ -41,12 +46,13 @@ dependencies:
 
 ## 脚本
 
-| 脚本                               | 用途                                                                |
-| ---------------------------------- | ------------------------------------------------------------------- |
-| `scripts/select_meeting_slot.py`   | 生成会议室可预约时段，输出 `artifacts/available_slots.json`         |
-| `scripts/query_free_rooms.py`      | 按最终时间范围查询空闲会议室，输出 `artifacts/available_rooms.json` |
-| `scripts/create_booking.py`        | 检查冲突、写入 `meetings.json`、输出 `output/booking_info.json`     |
-| `scripts/send_internal_message.py` | 为我方参会人员记录内部提醒消息                                      |
+| 脚本                               | 用途                                                                               |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `scripts/select_meeting_slot.py`   | 生成会议室可预约时段，输出 `artifacts/available_slots.json`                        |
+| `scripts/query_free_rooms.py`      | 按最终时间范围查询空闲会议室，输出 `artifacts/available_rooms.json`                |
+| `scripts/query_bookings.py`        | 查询已预定会议（按日期/会议室/预定人/主题），输出 `artifacts/booked_meetings.json` |
+| `scripts/create_booking.py`        | 检查冲突、写入 `meetings.json`、输出 `output/booking_info.json`                    |
+| `scripts/send_internal_message.py` | 为我方参会人员记录内部提醒消息                                                     |
 
 ## 执行流程
 
@@ -77,6 +83,26 @@ dependencies:
     若只有会议室名称，可用 `--room-name "<room_name>"` 代替 `--room-id`。
 12. 读取 `output/booking_info.json`，对 `internal_attendees` 中每个人运行 `send_internal_message.py`，输出 `artifacts/message_<index>.json`。
 13. 汇总提醒结果到 `artifacts/reminder_result.json`，生成 `manifest.json`，返回 `status`、`message`、`booking_id`、`output_files`。
+
+## 查询已预定会议
+
+当用户只是想查看“有哪些预定的会议”，不创建预定时，走本流程；只读 `meetings.json`，不写入、不修改任何记录。
+
+1. 生成 `execution_id` 与执行目录（同上），保存用户原始查询到 `input/initial_params.json`。
+2. 从用户输入提取可选过滤条件，能提取几个用几个；都没有时表示查询全部：
+   - 日期：`--date`（“今天/明天/后天/2026-06-12”单日）或 `--date-from` / `--date-to`（区间）。
+   - 会议室：`--room-name`（按名称包含匹配，如“大会议室”）。
+   - 预定人：`--booker-name`（按姓名包含匹配）。
+   - 主题：`--keyword`（按会议主题包含匹配）。
+   - 编号：`--booking-id`（按预定编号精确匹配）。
+3. 运行：
+   ```bash
+   python3 scripts/query_bookings.py --output-path <execution_dir_path>/artifacts/booked_meetings.json
+   ```
+   按需追加上述过滤参数，例如 `--date 今天 --room-name 大会议室`。
+4. 向用户原样展示 `booked_meetings.json` 的 `display_text`；结果已按会议开始时间排序，每条包含时间、会议室、主题、预定人、我方/客户方参会人和编号。
+5. `count` 为 0 时，如实告知“未查询到符合条件的预定会议”，不要编造记录；不得在查询流程里创建预定。
+6. 返回 `status`、`message`、`count`、`output_files`。
 
 ## 字段规则
 

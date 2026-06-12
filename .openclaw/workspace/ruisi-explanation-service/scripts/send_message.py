@@ -26,7 +26,6 @@ DEFAULT_API_URL = "http://127.0.0.1:18900/send"
 DEFAULT_TO_JID = "niujunke@im.tuguan.net"
 DEFAULT_FROM_ACCOUNT = "a01@im.tuguan.net"
 DEFAULT_DISPLAY_BASE_URL = "http://172.16.1.138:8088"
-DEFAULT_PLAYLIST_ID = "M20260604_001"
 DEFAULT_TESTDATA_PATH = Path(__file__).resolve().parents[1] / "data" / "testdata.json"
 DEFAULT_PRESET_MEETING_DATA_DIR = Path("/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData")
 DEFAULT_MEETING_ROOM_NAME = "大会议室"
@@ -42,10 +41,9 @@ PID_PATH = RUNTIME_DIR / "demo.pid"
 PAUSE_FLAG_PATH = RUNTIME_DIR / "demo_pause.flag"
 RUNNER_PATH = Path(__file__).resolve().parent / "run_demo_sequence.py"
 
-# 这两个前缀用于区分消息去向；DISPLAY_CONTROL_PREFIX 不会真实发给内容展示器，
-# 真实 HTTP 请求只发送 JSON body。
-DIGITAL_HUMAN_PREFIX = "【说明：当前消息最终发送给P02，用于“数字人”展示字幕和播报语音】"
-DISPLAY_CONTROL_PREFIX = "【说明：当前消息最终发送给“内容展示器”，用于控制展示器展示指定章节、段落的相关内容】"
+# 内部通道标识，仅用于决定消息走 P02/XMPP 还是内容展示器 HTTP API。
+DIGITAL_HUMAN_CHANNEL = "digital_human"
+CONTENT_DISPLAY_CHANNEL = "content_display"
 
 CHINESE_NUMBERS = {
     "零": 0,
@@ -63,7 +61,20 @@ CHINESE_NUMBERS = {
 }
 
 
+# 这些演示控制成功提示暂时不返回到界面：开始/暂停/恢复/跳转/停止成功时
+# 静默处理，stdout 不输出。失败提示与其他成功提示（如“讲解已推送”“演示状态”）不受影响。
+SILENCED_SUCCESS_MESSAGES = {
+    "演示已开始",
+    "演示已暂停",
+    "演示已恢复",
+    "正在跳转指定章节",
+    "演示已停止",
+}
+
+
 def result(status, message):
+    if status == "success" and message in SILENCED_SUCCESS_MESSAGES:
+        return
     print(json.dumps({"status": status, "message": message}, ensure_ascii=False, separators=(",", ":")))
 
 
@@ -130,7 +141,7 @@ def display_base_url():
 
 
 def display_playlist_id():
-    return os.environ.get("CONTENT_DISPLAY_PLAYLIST_ID") or DEFAULT_PLAYLIST_ID
+    return os.environ.get("CONTENT_DISPLAY_PLAYLIST_ID") or None
 
 
 def parse_local_datetime(value):
@@ -528,14 +539,8 @@ def demo_status_result():
     return 0
 
 
-def format_body(prefix, message):
-    """把待发送消息格式化为 P02 可展示的文本。
-
-    数字人消息只发送 JSON body 本身，不再附加“【说明：…】”前缀。
-    prefix 仅用于在 send_with_retry 中区分发送通道。
-    """
-    if prefix == DISPLAY_CONTROL_PREFIX:
-        return normalized_json(message)
+def format_body(channel, message):
+    """把数字人模拟消息格式化成发给 P02 的 JSON 文本。"""
     if isinstance(message, str):
         return message
     return normalized_json(message)
@@ -598,7 +603,7 @@ def build_segment_messages(chapter, segment):
         "segment_index": number_to_zero_based_index(segment_id, 0),
         "show_subtitle": True,
     }
-    return [(DIGITAL_HUMAN_PREFIX, digital_human_message), (DISPLAY_CONTROL_PREFIX, display_message)]
+    return [(DIGITAL_HUMAN_CHANNEL, digital_human_message), (CONTENT_DISPLAY_CHANNEL, display_message)]
 
 
 def number_to_zero_based_index(value, fallback):
@@ -826,7 +831,10 @@ def post_display_api(path, payload, timeout=5):
 
 
 def load_display_playlist(playlist_id=None):
-    return post_display_api("/api/playlist/load", {"playlist_id": playlist_id or display_playlist_id()})
+    resolved_playlist_id = playlist_id or display_playlist_id()
+    if not resolved_playlist_id:
+        raise ValueError("缺少内容展示器 playlist_id")
+    return post_display_api("/api/playlist/load", {"playlist_id": resolved_playlist_id})
 
 
 def show_display_segment(message):
@@ -847,9 +855,9 @@ def stop_content_display():
     return False, response
 
 
-def send_with_retry(prefix, message):
+def send_with_retry(channel, message):
     """按消息类型选择发送通道：内容展示器走 HTTP，数字人模拟消息走 P02/XMPP。"""
-    if prefix == DISPLAY_CONTROL_PREFIX:
+    if channel == CONTENT_DISPLAY_CHANNEL:
         last_error = None
         for attempt in range(2):
             try:
@@ -869,7 +877,7 @@ def send_with_retry(prefix, message):
     token = os.environ.get("XMPP_SEND_API_TOKEN") or None
     request_payload = {
         "jid": to_jid,
-        "body": format_body(prefix, message),
+        "body": format_body(channel, message),
         "from": from_account,
     }
 
@@ -911,7 +919,7 @@ def main():
         return 1
 
     if args.dry_run and args.print_messages:
-        built = [format_body(prefix, message) for prefix, message in messages]
+        built = [{"channel": channel, "body": format_body(channel, message)} for channel, message in messages]
         print(json.dumps({"status": "success", "message": "讲解已推送", "bodies": built}, ensure_ascii=False, separators=(",", ":")))
         return 0
 
@@ -919,8 +927,8 @@ def main():
         result("success", "讲解已推送")
         return 0
 
-    for prefix, message in messages:
-        ok, _detail = send_with_retry(prefix, message)
+    for channel, message in messages:
+        ok, _detail = send_with_retry(channel, message)
         if not ok:
             result("failed", "消息发送失败")
             return 1

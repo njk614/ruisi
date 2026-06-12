@@ -198,16 +198,16 @@ def send_item(item, dry_run=False):
     """发送当前段落对应的两类消息：数字人模拟消息和内容展示器 show 指令。"""
     messages = build_segment_messages(item["chapter"], item["segment"])
     if dry_run:
-        for prefix, message in messages:
+        for channel, message in messages:
             if is_pause_flag_set():
                 return "paused"
-            log(f"DRY_RUN {format_body(prefix, message)}")
+            log(f"DRY_RUN channel={channel} payload={format_body(channel, message)}")
         return True
 
-    for prefix, message in messages:
+    for channel, message in messages:
         if is_pause_flag_set():
             return "paused"
-        ok, detail = send_with_retry(prefix, message)
+        ok, detail = send_with_retry(channel, message)
         if not ok:
             log(f"SEND_FAILED detail={detail}")
             return False
@@ -217,6 +217,9 @@ def send_item(item, dry_run=False):
 def load_playlist_before_demo(dry_run=False, playlist_id=None):
     """自动演示开始前，先让内容展示器加载当前会议的 playlist。"""
     playlist_id = playlist_id or display_playlist_id()
+    if not playlist_id:
+        log("LOAD_PLAYLIST_FAILED detail=missing playlist_id")
+        return False
     if dry_run:
         log(f"DRY_RUN LOAD_PLAYLIST playlist_id={playlist_id}")
         return True
@@ -403,7 +406,7 @@ def run_demo(args):
 def parse_args():
     parser = argparse.ArgumentParser(description="按演示脚本 duration 自动推送数字人消息和内容展示器指令。")
     parser.add_argument("--data", default=str(DEFAULT_TESTDATA_PATH), help="Path to demo sequence JSON.")
-    parser.add_argument("--playlist-id", help="Content display playlist_id. Defaults to CONTENT_DISPLAY_PLAYLIST_ID.")
+    parser.add_argument("--playlist-id", help="Content display playlist_id. Defaults to CONTENT_DISPLAY_PLAYLIST_ID; required if the environment variable is unset.")
     parser.add_argument("--start-chapter-index", type=int, default=0)
     parser.add_argument("--start-segment-index", type=int, default=0)
     parser.add_argument("--require-start-target", action="store_true", help="Fail instead of falling back to the first segment when the start target is missing.")

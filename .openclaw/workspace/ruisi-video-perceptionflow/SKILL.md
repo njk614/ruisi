@@ -433,12 +433,12 @@ Content-Type: application/json
 
 ## 参考文件
 
-| 文件          | 路径                                                                                                     |
-| ------------- | -------------------------------------------------------------------------------------------------------- |
-| 会议预订数据  | `~/.openclaw/workspace/SimulatedData/meetings.json`                                                      |
-| 会议索引      | `~/.openclaw/workspace/SimulatedData/PresetMeetingData/meeting_index.json`                               |
-| 欢迎模板      | `~/.openclaw/workspace/SimulatedData/templates/welcome-template.md`                                      |
-| 客户画像      | `~/.openclaw/workspace/SimulatedData/PresetMeetingData/<booking_id>/customer_profile/CustomerProfile.md` |
+| 文件         | 路径                                                                                                     |
+| ------------ | -------------------------------------------------------------------------------------------------------- |
+| 会议预订数据 | `~/.openclaw/workspace/SimulatedData/meetings.json`                                                      |
+| 会议索引     | `~/.openclaw/workspace/SimulatedData/PresetMeetingData/meeting_index.json`                               |
+| 欢迎模板     | `~/.openclaw/workspace/SimulatedData/templates/welcome-template.md`                                      |
+| 客户画像     | `~/.openclaw/workspace/SimulatedData/PresetMeetingData/<booking_id>/customer_profile/CustomerProfile.md` |
 
 ---
 
@@ -463,7 +463,7 @@ Content-Type: application/json
   "status": "success",
   "message": "欢迎卡片已推送至 P02（数字孪生大屏）",
   "welcome_card": {
-    "text": "尊敬的智云科技（北京）有限公司各位来宾，欢迎来到数字冰雹！今天的「数字孪生平台演示与技术交流」即将开始。祝本次会谈顺利！我是你们的智能助手宝宝，有任何需要随时呼我~ [查看会议议程]",
+    "text": "尊敬的智云科技（北京）有限公司各位来宾，欢迎来到数字冰雹！今天的「数字孪生平台演示与技术交流」即将开始。祝本次会谈顺利！我是你们的智能助手宝宝，有任何需要随时呼我~ ",
     "target_device": "P02",
     "device_name": "数字孪生大屏",
     "notes": "王磊（产品经理）仅会英语，请安排翻译陪同参观"
@@ -492,7 +492,7 @@ Content-Type: application/json
   "status": "success",
   "message": "欢迎卡片已推送至 P02（数字孪生大屏）",
   "welcome_card": {
-    "text": "尊敬的陈浩总您好，欢迎再次来到数字冰雹！这是您第3次来访。今天的「边缘计算与数字孪生融合方案交流」即将开始。祝您本次会谈顺利！我是您的智能助手宝宝，有任何需要随时呼我~ [查看会议议程]",
+    "text": "尊敬的陈浩总您好，欢迎再次来到数字冰雹！这是您第3次来访。今天的「边缘计算与数字孪生融合方案交流」即将开始。祝您本次会谈顺利！我是您的智能助手宝宝，有任何需要随时呼我~ ",
     "target_device": "P02",
     "device_name": "数字孪生大屏",
     "notes": ""

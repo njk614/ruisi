@@ -1,6 +1,6 @@
 ---
 name: ruisi-explanation-service
-description: 在讲解/演示进行中或开始前，接收对自动讲解流程的播放控制指令——开始（开始演示/开始讲解/播放演示）、暂停（暂停/暂停演示/停一下/先停/别讲）、继续（继续/继续演示/接着讲/恢复演示）、停止（停止演示/结束演示/退出演示）、跳转（跳转到第N章/切换到某章节/看看第N章/播放第N章）、查询状态（演示状态/讲到哪了/推送到哪了）。演示进行中用户只说“暂停”“继续”“停一下”“接着讲”等简短控制词也应触发本 Skill，不要求说完整短语。被触发后自动读取 meeting_index.json 定位当前大会议室会议的 PresentationScript.json，并按 duration 定时向 P02 推送数字人模拟消息，同时通过 HTTP 调用真实内容展示器 /api/show；也支持单段 chapters/segments 数据块转发。Use when a user starts, pauses, resumes, stops, or jumps within an automated demo/presentation sequence (including short colloquial commands while it is running), sends digital-human messages to P02 through XMPP, and controls the content display over HTTP.
+description: 在讲解/演示进行中或开始前，接收对自动讲解流程的播放控制指令——开始（开始演示/开始讲解/播放演示）、暂停（暂停/暂停演示/停一下/先停/别讲/别放）、继续（继续/继续演示/接着讲/接着放/恢复演示）、停止（停止演示/结束演示/关闭演示/退出演示）、跳转（跳转到第N章/切换到某章节/看看第N章/播放第N章）、查询状态（演示状态/讲到哪了/推送到哪了）。演示进行中用户只说“暂停”“继续”“停一下”“接着讲”等简短控制词也应触发本 Skill，不要求说完整短语；但“停止、结束、关闭、退出”语义必须按停止演示处理，绝不能当作暂停。被触发后自动读取 meeting_index.json 定位当前大会议室会议的 PresentationScript.json，并按 duration 定时向 P02 推送数字人模拟消息，同时通过 HTTP 调用真实内容展示器 /api/show；也支持单段 chapters/segments 数据块转发。Use when a user starts, pauses, resumes, stops, or jumps within an automated demo/presentation sequence (including short colloquial commands while it is running, where stop/end/close must map to stop rather than pause), sends digital-human messages to P02 through XMPP, and controls the content display over HTTP.
 level: L1
 allowed-tools:
   - bash
@@ -16,7 +16,8 @@ allowed-tools:
 核心能力：
 
 - 自动演示：用户说“开始演示”时，入口脚本读取 `meeting_index.json`，筛选“大会议室”且当前时间落在 `time_range` 内的会议，提取 `booking_id` 和 `presentation_script_path`；后台脚本读取该会议的 `PresentationScript.json`，先调用内容展示器 `/api/playlist/load`，再按 `chapters -> segments` 顺序推进，每段发送后等待该段 `duration` 秒。
-- 演示控制：用户说“暂停演示”“继续演示”“停止演示”“跳转到第N章”时，入口脚本向后台推送脚本写入控制命令。
+- 演示控制：用户说“暂停”“暂停演示”“继续”“继续演示”“停止演示”“跳转到第N章”时，入口脚本向后台推送脚本写入控制命令；演示运行中单独的“暂停”默认表示暂停当前讲解演示。
+- 停止语义隔离：用户说“停止”“停止演示”“结束演示”“关闭演示”等，必须按停止演示处理，不能归到暂停演示。
 - 控制优先：OpenClaw 收到任何消息时，若后台演示正在运行，入口脚本会先临时暂停后续推送，再解析消息语义并执行对应动作。
 - 状态记录：后台脚本把当前发送到第几章第几段写入 `runtime/demo_state.json`。
 - 强制暂停：入口脚本会写入 `runtime/demo_pause.flag`，后台脚本在发送前、两条消息之间、等待下一段时都会检查它。
@@ -32,9 +33,11 @@ Skill 真实调用内容展示器 HTTP API；数字人仍通过 P02/XMPP 模拟�
    - 开始类：`开始演示`、`启动演示`、`开始讲解`、`启动讲解`、`播放演示`
    - 暂停类：`暂停演示`、`暂停讲解`、`暂停`、`先停`、`停一下`、`别讲`、`别放`
    - 继续类：`继续演示`、`继续讲解`、`继续`、`接着讲`、`接着放`、`恢复演示`、`恢复播放`
-   - 停止类：`停止演示`、`结束演示`、`停止讲解`、`退出演示`
+   - 停止类：`停止演示`、`停止讲解`、`结束演示`、`关闭演示`、`退出演示`、`停止`
    - 跳转类：`跳转到第N章`、`切换到〈章节标题〉`、`看看第N章`、`播放第N章`（支持中文数字，如“第七章”）
    - 状态类：`演示状态`、`当前演示`、`讲到哪`、`推送到哪`
+
+   语义边界（务必区分暂停与停止）：演示运行中短指令 `暂停`、`先停`、`停一下`、`别讲`、`别放` 一律按暂停演示处理，可被 `继续` 恢复；而 `停止`、`停止演示`、`结束演示`、`关闭演示`、`退出演示` 等带有“停止/结束/关闭/退出”语义的表达必须按停止演示处理，触发清理退出并调用 `/api/stop`，绝不能归为暂停。
 2. 合法 JSON，且包含 `chapters` 字段。
 3. JSON 片段，形如 `"chapters": [...]`。
 
@@ -60,7 +63,7 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
 
 3. 脚本按输入类型处理：
    - `开始演示`：启动 `scripts/run_demo_sequence.py` 后台进程。
-   - `暂停演示` / `继续演示` / `停止演示` / `跳转到第N章`：写入 `runtime/demo_command.json`，由后台脚本响应。
+   - `暂停` / `暂停演示` / `继续` / `继续演示` / `停止演示` / `跳转到第N章`：写入 `runtime/demo_command.json`，由后台脚本响应。
    - `演示状态`：读取 `runtime/demo_state.json` 并返回当前章/段状态。
    - `chapters` 数据块：给 P02 发送数字人消息，并调用内容展示器 `/api/show`。
    - 自然语言章节跳转：演示运行中写入 jump 命令，后台脚本定位目标章节第一段并继续推送。
@@ -87,6 +90,8 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
 { "status": "success", "message": "演示状态", "state": { "status": "running", "chapter_index": 0, "segment_index": 1 } }
 ```
 
+> 注意：演示控制类指令（开始演示 / 暂停 / 继续 / 跳转 / 停止演示）**成功时暂不回显**——脚本静默处理，stdout 不输出任何内容，界面不向用户返回“演示已开始/已暂停/已恢复/正在跳转指定章节/演示已停止”等提示。控制相关的动作仍照常执行，只是不再返回成功提示文字。控制**失败**（如“当前没有正在运行的演示”）以及 `演示状态`、`讲解已推送` 等仍照常返回。
+
 ## 自动演示控制
 
 ### 开始演示
@@ -109,27 +114,29 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
 
 返回：
 
-```json
-{ "status": "success", "message": "演示已开始" }
-```
+成功时暂不回显（stdout 静默，不向界面返回“演示已开始”提示）；若启动失败则照常返回 `{ "status": "failed", "message": "..." }`。
 
-该回执会第一时间返回，后台推送随后异步开始。
+该动作会立即触发，后台推送随后异步开始。
 
 为避免 P02 推送先于 OpenClaw 回执出现，入口脚本会给后台推送附加一个短暂延迟，默认 2 秒。
 
 ### 暂停演示
 
-输入：
+输入示例：
+
+```text
+暂停
+```
+
+或：
 
 ```text
 暂停演示
 ```
 
-第一时间返回：
+注意：`停止`、`停止演示`、`结束演示`、`关闭演示` 不属于暂停语义，必须走“停止演示”流程。
 
-```json
-{ "status": "success", "message": "演示已暂停" }
-```
+成功时暂不回显（stdout 静默，不向界面返回“演示已暂停”提示）；失败时照常返回失败 JSON。
 
 动作：
 
@@ -150,11 +157,7 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
 继续演示
 ```
 
-第一时间返回：
-
-```json
-{ "status": "success", "message": "演示已恢复" }
-```
+成功时暂不回显（stdout 静默，不向界面返回“演示已恢复”提示）；失败时照常返回失败 JSON。
 
 动作：
 
@@ -169,11 +172,7 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
 跳转到第7章
 ```
 
-第一时间返回：
-
-```json
-{ "status": "success", "message": "正在跳转指定章节" }
-```
+成功时暂不回显（stdout 静默，不向界面返回“正在跳转指定章节”提示）；若目标章节不存在等失败情况照常返回失败 JSON。
 
 动作：
 
@@ -207,6 +206,8 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
 ```text
 停止演示
 ```
+
+成功时暂不回显（stdout 静默，不向界面返回“演示已停止”提示）；失败时照常返回失败 JSON。
 
 动作：
 
@@ -263,8 +264,16 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
 
 数字人消息 body：
 
-```text
-{"messagetype":"bot","data":{"messageId":"section-1-1","text":"[action:bow]尊敬的华为各位领导、专家，大家好！我是公司产品的AI接待助理。","duration":6,"audioUrl":"http://192.168.1.254:8888/PresetMeetingData/audio/audio_001_01.mp3"}}
+```json
+{
+  "messagetype": "bot",
+  "data": {
+    "messageId": "section-1-1",
+    "text": "[action:bow]尊敬的华为各位领导、专家，大家好！我是公司产品的AI接待助理。",
+    "duration": 6,
+    "audioUrl": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_001_01.mp3"
+  }
+}
 ```
 
 内容展示器 HTTP 请求：
@@ -300,8 +309,16 @@ POST http://172.16.1.138:8088/api/show
 
 数字人消息 body：
 
-```text
-{"messagetype":"bot","data":{"messageId":"section-2-1","text":"[action:serious]我们在数字孪生领域深耕近二十年，积累了上千个落地项目经验，也早已深度融入华为的生态体系。","duration":10,"audioUrl":"http://192.168.1.254:8888/PresetMeetingData/audio/audio_002_01.mp3"}}
+```json
+{
+  "messagetype": "bot",
+  "data": {
+    "messageId": "section-2-1",
+    "text": "[action:serious]我们在数字孪生领域深耕近二十年，积累了上千个落地项目经验，也早已深度融入华为的生态体系。",
+    "duration": 10,
+    "audioUrl": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_002_01.mp3"
+  }
+}
 ```
 
 内容展示器 HTTP 请求：

@@ -13,6 +13,35 @@ from typing import Any
 from common import eprint, json_dumps, load_config
 
 
+def candidate_message_service_scripts() -> list[Path]:
+    """按优先级列出 send_message.py 可能所在的位置，覆盖常见部署布局。
+
+    free-qa 与 explanation-service 在不同机器上可能是同级 skill 目录，也可能
+    被平铺到同一个 skills/scripts/ 下，且顶层 workspace 目录名（如 workspace、
+    workspace_a01）并不固定，因此这里枚举多个候选，由调用方取第一个存在的。
+    """
+    script_dir = Path(__file__).resolve().parent           # .../ruisi-free-qa/scripts
+    skill_dir = script_dir.parent                           # .../ruisi-free-qa
+    skills_root = skill_dir.parent                          # .../skills 或 .../workspace
+
+    candidates = [
+        # 每 skill 独立子目录：.../<skills_root>/ruisi-explanation-service/scripts/send_message.py
+        skills_root / "ruisi-explanation-service" / "scripts" / "send_message.py",
+        # 平铺布局：与本脚本同在 .../scripts/send_message.py
+        script_dir / "send_message.py",
+        skills_root / "scripts" / "send_message.py",
+    ]
+
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for path in candidates:
+        resolved = path.resolve()
+        if resolved not in seen:
+            seen.add(resolved)
+            unique.append(resolved)
+    return unique
+
+
 def resolve_message_service_script(config: dict[str, Any]) -> Path:
     section = config.get("explanation_service", {})
     configured = str(section.get("message_service_script", "")).strip()
@@ -20,10 +49,18 @@ def resolve_message_service_script(config: dict[str, Any]) -> Path:
         path = Path(configured).expanduser()
         if not path.is_absolute():
             path = Path.cwd() / path
-        return path.resolve()
+        resolved = path.resolve()
+        # 配置路径存在就直接用；不存在则退回候选探测，避免单一硬编码路径
+        # 在换部署环境（workspace 目录名不同、布局不同）时直接失败。
+        if resolved.exists():
+            return resolved
 
-    default_path = Path(__file__).resolve().parents[2] / "ruisi-explanation-service" / "scripts" / "send_message.py"
-    return default_path
+    for candidate in candidate_message_service_scripts():
+        if candidate.exists():
+            return candidate
+
+    # 都不存在时，返回首个候选作为报错路径，交给上层 exists() 检查统一报错。
+    return candidate_message_service_scripts()[0]
 
 
 def build_command(script_path: Path, config: dict[str, Any]) -> list[str]:
