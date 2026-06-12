@@ -415,7 +415,7 @@ python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting-room-la
 **消息模板**：
 
 ```
-"已为您开启{区域中文名}的灯光和空调（24℃）。如需调整，可随时告诉我。"
+"已为您开启{区域中文名}的灯光和空调（24℃）。如需调整，可随时告诉我。需要我现在开始为您介绍本次汇报内容吗？"
 ```
 
 **推送方式**：通过 HTTP POST 到 `http://127.0.0.1:18900/send` 发送消息（与步骤 2.6 相同）。
@@ -434,7 +434,7 @@ python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting-room-la
     { "device_type": "hvac", "action": "set_temperature", "temperature": 24, "status": "success" }
   ],
   "feedback_sent_to": ["P01", "P02"],
-  "feedback_message": "已为您开启大会议室的灯光和空调（24℃）。如需调整，可随时告诉我。"
+  "feedback_message": "已为您开启大会议室的灯光和空调（24℃）。如需调整，可随时告诉我。需要我现在开始为您介绍本次汇报内容吗？"
 }
 ```
 

@@ -1,6 +1,6 @@
 ---
 name: ruisi-explanation-service
-description: 接收“开始演示、暂停演示、继续演示、跳转到第N章”等自然语言控制指令，自动读取 meeting_index.json 定位当前大会议室会议的 PresentationScript.json，并按 duration 定时向 P02 推送数字人模拟消息，同时通过 HTTP 调用真实内容展示器 /api/show；也支持单段 chapters/segments 数据块转发。Use when a user controls an automated demo sequence, sends digital-human messages to P02 through XMPP, and controls the content display over HTTP.
+description: 在讲解/演示进行中或开始前，接收对自动讲解流程的播放控制指令——开始（开始演示/开始讲解/播放演示）、暂停（暂停/暂停演示/停一下/先停/别讲）、继续（继续/继续演示/接着讲/恢复演示）、停止（停止演示/结束演示/退出演示）、跳转（跳转到第N章/切换到某章节/看看第N章/播放第N章）、查询状态（演示状态/讲到哪了/推送到哪了）。演示进行中用户只说“暂停”“继续”“停一下”“接着讲”等简短控制词也应触发本 Skill，不要求说完整短语。被触发后自动读取 meeting_index.json 定位当前大会议室会议的 PresentationScript.json，并按 duration 定时向 P02 推送数字人模拟消息，同时通过 HTTP 调用真实内容展示器 /api/show；也支持单段 chapters/segments 数据块转发。Use when a user starts, pauses, resumes, stops, or jumps within an automated demo/presentation sequence (including short colloquial commands while it is running), sends digital-human messages to P02 through XMPP, and controls the content display over HTTP.
 level: L1
 allowed-tools:
   - bash
@@ -28,7 +28,13 @@ Skill 真实调用内容展示器 HTTP API；数字人仍通过 P02/XMPP 模拟�
 
 当用户在 OpenClaw 聊天界面输入以下任意内容时触发：
 
-1. `开始演示`、`暂停演示`、`继续演示`、`停止演示`、`跳转到第N章`、`演示状态` 等自然语言控制指令。
+1. 演示/讲解控制类自然语言，按意图分组（演示进行中的简短、口语控制词同样触发，**不要求用户说完整短语**）：
+   - 开始类：`开始演示`、`启动演示`、`开始讲解`、`启动讲解`、`播放演示`
+   - 暂停类：`暂停演示`、`暂停讲解`、`暂停`、`先停`、`停一下`、`别讲`、`别放`
+   - 继续类：`继续演示`、`继续讲解`、`继续`、`接着讲`、`接着放`、`恢复演示`、`恢复播放`
+   - 停止类：`停止演示`、`结束演示`、`停止讲解`、`退出演示`
+   - 跳转类：`跳转到第N章`、`切换到〈章节标题〉`、`看看第N章`、`播放第N章`（支持中文数字，如“第七章”）
+   - 状态类：`演示状态`、`当前演示`、`讲到哪`、`推送到哪`
 2. 合法 JSON，且包含 `chapters` 字段。
 3. JSON 片段，形如 `"chapters": [...]`。
 
@@ -258,7 +264,6 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
 数字人消息 body：
 
 ```text
-【说明：当前消息最终发送给P02，用于“数字人”展示字幕和播报语音】
 {"messagetype":"bot","data":{"messageId":"section-1-1","text":"[action:bow]尊敬的华为各位领导、专家，大家好！我是公司产品的AI接待助理。","duration":6,"audioUrl":"http://192.168.1.254:8888/PresetMeetingData/audio/audio_001_01.mp3"}}
 ```
 
@@ -296,7 +301,6 @@ POST http://172.16.1.138:8088/api/show
 数字人消息 body：
 
 ```text
-【说明：当前消息最终发送给P02，用于“数字人”展示字幕和播报语音】
 {"messagetype":"bot","data":{"messageId":"section-2-1","text":"[action:serious]我们在数字孪生领域深耕近二十年，积累了上千个落地项目经验，也早已深度融入华为的生态体系。","duration":10,"audioUrl":"http://192.168.1.254:8888/PresetMeetingData/audio/audio_002_01.mp3"}}
 ```
 
@@ -329,7 +333,7 @@ http://127.0.0.1:18900/send
 请求体：
 
 ```json
-{ "jid": "niujunke@im.tuguan.net", "body": "<说明前缀>\n<JSON消息>", "from": "a01@im.tuguan.net" }
+{ "jid": "niujunke@im.tuguan.net", "body": "<JSON消息>", "from": "a01@im.tuguan.net" }
 ```
 
 ## 内容展示器 HTTP 对接

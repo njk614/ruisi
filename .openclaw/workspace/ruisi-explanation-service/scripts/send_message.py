@@ -529,12 +529,16 @@ def demo_status_result():
 
 
 def format_body(prefix, message):
-    """把待发送消息格式化为 P02 可展示的文本。"""
+    """把待发送消息格式化为 P02 可展示的文本。
+
+    数字人消息只发送 JSON body 本身，不再附加“【说明：…】”前缀。
+    prefix 仅用于在 send_with_retry 中区分发送通道。
+    """
     if prefix == DISPLAY_CONTROL_PREFIX:
-        return f"【说明：当前消息将通过 HTTP 发送给内容展示器 /api/show】\n{normalized_json(message)}"
+        return normalized_json(message)
     if isinstance(message, str):
-        return f"{prefix}\n{message}"
-    return f"{prefix}\n{normalized_json(message)}"
+        return message
+    return normalized_json(message)
 
 
 def try_load_json(raw):
