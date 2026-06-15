@@ -14,10 +14,12 @@
         {
           "segment_id": 1,
           "text": "尊敬的各位领导、专家，大家好！我是AI接待助理。",
-          "duration": 8,
-          "audio": "audio/audio_001_01.mp3",
-          "performance_code": "bow",
-          "performance_desc": "动作-鞠躬"
+          "duration": null,
+          "audio": "http://172.16.1.138:8888/SimulatedData/PresetMeetingData/M20260610_001/audio/audio_001_01.mp3",
+          "performance_code": "wave",
+          "performance_duration": 4,
+          "push_interval": null,
+          "performance_desc": "动作-挥手"
         }
       ]
     }

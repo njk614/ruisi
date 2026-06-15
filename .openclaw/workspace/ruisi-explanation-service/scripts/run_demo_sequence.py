@@ -5,7 +5,7 @@
 - 读取当前会议的 PresentationScript.json，并展开为按顺序推送的章节/段落列表。
 - 先调用内容展示器 /api/playlist/load 加载当前会议资源包。
 - 每个段落依次发送数字人模拟消息和内容展示器 /api/show 指令。
-- 每段发送后按 segment.duration 等待，并在等待期间响应暂停、继续、跳转、停止命令。
+- 每段发送后按 segment.push_interval 等待，并在等待期间响应暂停、继续、跳转、停止命令。
 - 通过 runtime/demo_state.json 持续记录当前推送状态，便于外部查询。
 """
 
@@ -91,6 +91,7 @@ def load_sequence(path):
         for segment_position, segment in enumerate(segments):
             if not isinstance(segment, dict):
                 continue
+            push_interval = segment_push_interval(segment)
             items.append(
                 {
                     "chapter": chapter,
@@ -99,6 +100,7 @@ def load_sequence(path):
                     "segment_position": segment_position,
                     "chapter_index": zero_based_index(chapter.get("chapter_id"), chapter_position),
                     "segment_index": zero_based_index(segment.get("segment_id"), segment_position),
+                    "push_interval": push_interval,
                 }
             )
     if not items:
@@ -144,6 +146,7 @@ def state_payload(status, item=None, message=None, remaining_duration=None):
                 "chapter_topic": chapter.get("chapter_topic"),
                 "text": segment.get("text"),
                 "duration": segment.get("duration"),
+                "push_interval": segment.get("push_interval"),
                 "audio": segment.get("audio"),
                 "performance_code": segment.get("performance_code"),
             }
@@ -285,9 +288,22 @@ def pause_if_requested(items, current_index, last_command_id, message="paused"):
     return current_index, last_command_id, action
 
 
-def wait_duration(items, current_index, duration, last_command_id):
-    """按当前段落 duration 等待，同时轮询暂停、跳转、停止命令。"""
-    remaining = max(0.0, float(duration or 0))
+def segment_push_interval(segment):
+    """读取当前段落推送间隔；新版脚本必须显式提供 push_interval。"""
+    if "push_interval" not in segment:
+        raise ValueError("segment 缺少 push_interval")
+    try:
+        value = float(segment.get("push_interval"))
+    except (TypeError, ValueError):
+        raise ValueError("segment push_interval 必须是数字")
+    if value < 0:
+        raise ValueError("segment push_interval 不能小于 0")
+    return value
+
+
+def wait_duration(items, current_index, push_interval, last_command_id):
+    """按当前段落 push_interval 等待，同时轮询暂停、跳转、停止命令。"""
+    remaining = max(0.0, float(push_interval))
     item = items[current_index]
     last_tick = time.monotonic()
     while remaining > 0:
@@ -331,7 +347,7 @@ def wait_duration(items, current_index, duration, last_command_id):
 
 
 def run_demo(args):
-    """后台演示主循环：加载脚本、逐段发送、按 duration 推进。"""
+    """后台演示主循环：加载脚本、逐段发送、按 push_interval 推进。"""
     ensure_runtime_dir()
     PID_PATH.write_text(str(os.getpid()), encoding="utf-8")
     log(f"BOOT pid={os.getpid()} data={args.data} dry_run={args.dry_run}")
@@ -391,8 +407,7 @@ def run_demo(args):
             write_state("failed", item=item, message="send failed")
             return 1
 
-        duration = item["segment"].get("duration") or 0
-        next_index, last_command_id, action = wait_duration(items, current_index, duration, last_command_id)
+        next_index, last_command_id, action = wait_duration(items, current_index, item["push_interval"], last_command_id)
         if action == "stop":
             write_state("stopped", item=item, message="stopped")
             return 0
@@ -404,7 +419,7 @@ def run_demo(args):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="按演示脚本 duration 自动推送数字人消息和内容展示器指令。")
+    parser = argparse.ArgumentParser(description="按演示脚本 push_interval 自动推送数字人消息和内容展示器指令。")
     parser.add_argument("--data", default=str(DEFAULT_TESTDATA_PATH), help="Path to demo sequence JSON.")
     parser.add_argument("--playlist-id", help="Content display playlist_id. Defaults to CONTENT_DISPLAY_PLAYLIST_ID; required if the environment variable is unset.")
     parser.add_argument("--start-chapter-index", type=int, default=0)

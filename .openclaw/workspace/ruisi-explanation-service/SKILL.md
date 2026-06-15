@@ -1,6 +1,6 @@
 ---
 name: ruisi-explanation-service
-description: 在讲解/演示进行中或开始前，接收对自动讲解流程的播放控制指令——开始（开始演示/开始讲解/播放演示）、暂停（暂停/暂停演示/停一下/先停/别讲/别放）、继续（继续/继续演示/接着讲/接着放/恢复演示）、停止（停止演示/结束演示/关闭演示/退出演示）、跳转（跳转到第N章/切换到某章节/看看第N章/播放第N章）、查询状态（演示状态/讲到哪了/推送到哪了）。演示进行中用户只说“暂停”“继续”“停一下”“接着讲”等简短控制词也应触发本 Skill，不要求说完整短语；但“停止、结束、关闭、退出”语义必须按停止演示处理，绝不能当作暂停。被触发后自动读取 meeting_index.json 定位当前大会议室会议的 PresentationScript.json，并按 duration 定时向 P02 推送数字人模拟消息，同时通过 HTTP 调用真实内容展示器 /api/show；也支持单段 chapters/segments 数据块转发。Use when a user starts, pauses, resumes, stops, or jumps within an automated demo/presentation sequence (including short colloquial commands while it is running, where stop/end/close must map to stop rather than pause), sends digital-human messages to P02 through XMPP, and controls the content display over HTTP.
+description: 在讲解/演示进行中或开始前，接收对自动讲解流程的播放控制指令——开始（开始演示/开始讲解/播放演示）、暂停（暂停/暂停演示/停一下/先停/别讲/别放）、继续（继续/继续演示/接着讲/接着放/恢复演示）、停止（停止演示/结束演示/关闭演示/退出演示）、跳转（跳转到第N章/切换到某章节/看看第N章/播放第N章）、查询状态（演示状态/讲到哪了/推送到哪了）。演示进行中用户只说“暂停”“继续”“停一下”“接着讲”等简短控制词也应触发本 Skill，不要求说完整短语；但“停止、结束、关闭、退出”语义必须按停止演示处理，绝不能当作暂停。被触发后自动读取 meeting_index.json 定位当前大会议室会议的 PresentationScript.json，并按 push_interval 定时向 P02 推送数字人模拟消息，同时通过 HTTP 调用真实内容展示器 /api/show；也支持单段 chapters/segments 数据块转发。Use when a user starts, pauses, resumes, stops, or jumps within an automated demo/presentation sequence (including short colloquial commands while it is running, where stop/end/close must map to stop rather than pause), sends digital-human messages to P02 through XMPP, and controls the content display over HTTP.
 level: L1
 allowed-tools:
   - bash
@@ -15,7 +15,7 @@ allowed-tools:
 
 核心能力：
 
-- 自动演示：用户说“开始演示”时，入口脚本读取 `meeting_index.json`，筛选“大会议室”且当前时间落在 `time_range` 内的会议，提取 `booking_id` 和 `presentation_script_path`；后台脚本读取该会议的 `PresentationScript.json`，先调用内容展示器 `/api/playlist/load`，再按 `chapters -> segments` 顺序推进，每段发送后等待该段 `duration` 秒。
+- 自动演示：用户说“开始演示”时，入口脚本读取 `meeting_index.json`，筛选“大会议室”且当前时间落在 `time_range` 内的会议，提取 `booking_id` 和 `presentation_script_path`；后台脚本读取该会议的 `PresentationScript.json`，先调用内容展示器 `/api/playlist/load`，再按 `chapters -> segments` 顺序推进，每段发送后等待该段 `push_interval` 秒。
 - 演示控制：用户说“暂停”“暂停演示”“继续”“继续演示”“停止演示”“跳转到第N章”时，入口脚本向后台推送脚本写入控制命令；演示运行中单独的“暂停”默认表示暂停当前讲解演示。
 - 停止语义隔离：用户说“停止”“停止演示”“结束演示”“关闭演示”等，必须按停止演示处理，不能归到暂停演示。
 - 控制优先：OpenClaw 收到任何消息时，若后台演示正在运行，入口脚本会先临时暂停后续推送，再解析消息语义并执行对应动作。
@@ -110,7 +110,7 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
 - 提取 `booking_id` 作为内容展示器 `playlist_id`。
 - 读取该会议的 `presentation_script_path`，例如 `<booking_id>/PresentationScript.json`。
 - 从第 1 章第 1 段开始推送。
-- 每段向 P02 发送数字人消息、向内容展示器调用 `/api/show` 后，等待该段 `duration` 秒，再进入下一段。
+- 每段向 P02 发送数字人消息、向内容展示器调用 `/api/show` 后，等待该段 `push_interval` 秒，再进入下一段。`push_interval` 为新版演示脚本必填字段，不能缺失；`duration` 只保留在数字人消息中，不再控制推送间隔。
 
 返回：
 
@@ -230,8 +230,10 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
           "segment_id": 1,
           "text": "尊敬的华为各位领导、专家，大家好！我是公司产品的AI接待助理。",
           "duration": 6,
+          "push_interval": 10,
           "audio": "audio/audio_001_01.mp3",
           "performance_code": "bow",
+          "performance_duration": 4,
           "performance_desc": "动作-鞠躬"
         }
       ]
@@ -251,8 +253,10 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
         "segment_id": 1,
         "text": "尊敬的华为各位领导、专家，大家好！我是公司产品的AI接待助理。",
         "duration": 6,
+        "push_interval": 10,
         "audio": "audio/audio_001_01.mp3",
         "performance_code": "bow",
+        "performance_duration": 4,
         "performance_desc": "动作-鞠躬"
       }
     ]
@@ -292,7 +296,8 @@ POST http://172.16.1.138:8088/api/show
 
 - `messageId`：`section-章节ID-段落ID`
 - `text`：`[action:表演动作指令]` + 完整段落文本；若 `performance_code` 为空，则不添加 action 前缀
-- `duration`：段落时长
+- `duration`：段落播报时长，只用于发给数字人的消息
+- `push_interval`：推送间隔，后台脚本按这个值等待后再推送下一段
 - `audioUrl`：音频完整路径，默认前缀为 `http://192.168.1.254:8888/PresetMeetingData/`
 
 内容展示器消息中，`chapter_index` 由 `chapter_id - 1` 得到，`segment_index` 由 `segment_id - 1` 得到。

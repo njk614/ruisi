@@ -119,10 +119,18 @@ description: 为 OpenClaw 中指定会议生成预置会议数据，包括客户
 请选择：确认，开始生成数据 / 继续补充
 ```
 
-生成摘要时，只输出：
+用户确认输入信息后，先输出：
 
 ```text
-已生成会议预置数据：
+好的，正在生成客户画像、演示文档和讲解脚本，请稍等，任务完成后我会第一时间通知您。
+```
+
+此阶段只生成 `CustomerProfile.md`、`PresentationDocument.md`、`PresentationScript.md` 和 `PresentationScript.json`，不得生成音频、回填音频时长、发布 Presenter 共享目录或更新完成状态。
+
+第一阶段生成完成后，只输出：
+
+```text
+客户画像、演示文档和讲解脚本已生成：
 - 客户画像：简要摘要
 - 演示文稿：章节数/重点内容
 - 讲解脚本：章节数/段落数
@@ -130,8 +138,9 @@ description: 为 OpenClaw 中指定会议生成预置会议数据，包括客户
 - 客户画像路径：完整路径
 - 演示文稿路径：完整路径
 - 讲解脚本路径：完整路径
+- 讲解脚本JSON路径：完整路径
 
-请确认是否继续生成音频及相关资源：是 / 否
+请先审核讲解脚本文档。如果文档已审核通过，需要继续预生成音频文件，请回复“确认”。
 ```
 
 ## 工作流程
@@ -210,6 +219,14 @@ python scripts/init_meeting_workspace.py <meeting_id> --data-root <SimulatedData
 - `继续补充`：允许用户补充或修改上述任一信息，然后重新整理摘要并再次确认。
 
 在用户明确选择 `确认，开始生成数据` 前，不得开始生成客户画像、演示文稿或讲解脚本。
+
+用户确认开始生成数据后，必须先回复：
+
+```text
+好的，正在生成客户画像、演示文档和讲解脚本，请稍等，任务完成后我会第一时间通知您。
+```
+
+该确认只允许进入文档和脚本生成阶段，不得直接生成音频。
 
 ### 4. 检索本地知识库和公开网络
 
@@ -299,25 +316,46 @@ PresetMeetingData/<meeting_id>/PresentationScript.md
 - 使用规定的 Markdown 表格列。
 - 一个独立展示资源实例对应一个章节。
 - 每个段落文本不超过 60 字。
-- 初次生成时 `时长(s)` 必须填写模拟时长，不能留空。
-- 模拟时长根据段落文本长度自动估算，范围为 8 到 25 秒。
-- 推荐估算规则：去除空白后的文本长度除以 4 后向上取整，再加 2 秒，最终限制在 8 到 25 秒之间。
+- 初次生成时 `时长(s)` 必须填 `-`，不得填写模拟时长。
 - 每个章节第一行必须填写资源类型、URL、参数和描述。
 - 同一章节后续行的资源字段填 `-`。
 - 资源 URL 必须原样来自 `resource_catalog.json.file_path`，完整网络地址不能截短。
-- 音频路径使用 `audio/audio_001_01.mp3` 形式。
+- 音频文件必须填写完整 HTTP 地址，格式为 `http://172.16.1.138:8888/SimulatedData/PresetMeetingData/<meeting_id>/audio/audio_001_01.mp3`。
+- `<meeting_id>` 必须使用当前会议真实 `booking_id`，不得使用会议主题、会议室名称或其他文本。
+- 音频字段中的完整 HTTP 地址仅用于数字人、内容展示器等外部设备访问音频；TTS 生成和音频时长回填必须只取其中的文件名，并映射到本地 `<meeting_dir>/audio/<音频文件名>` 读写。
 - 表演素材码只能使用模板中的合法值；不需要表演时填 `-`。
+- `表演素材码` 后必须填写 `素材时长(s)` 字段；使用表演素材时填写对应素材秒数，不使用表演素材时填 `-`。
+- 当前仅启用动作素材 `wave`、`point`、`nod`、`shake_head`，素材时长均为 4 秒。
+- 当前仅启用表情素材 `smile` 5 秒、`laugh` 3 秒、`cover_mouth_laugh` 4 秒。
+- 暂未启用的其他动作或表情素材不得生成到讲解脚本中。
+- 初次生成时 `推送间隔(s)` 必须填 `-`。
+- 真实音频生成后，读取音频文件实际时长并向上取整回填 `时长(s)`；例如 1.1 秒、1.9 秒都回填为 2 秒。
+- 回填后，`推送间隔(s)` 必须等于 `时长(s)` 加 `素材时长(s)`；不使用表演素材时，`素材时长(s)` 按 0 计算，即 `推送间隔(s)` 等于 `时长(s)`。
 - 必须遵守“讲解主体身份强制规则”，开场和后续第一人称均代表数字冰雹AI助理。
 
 校验：
 
 ```bash
-python scripts/validate_presentation_script_md.py <PresentationScript.md>
+python scripts/validate_presentation_script_md.py <PresentationScript.md> --meeting-id <meeting_id>
 ```
 
-继续前必须修复全部校验问题。
+继续前必须修复除真实音频时长外的全部校验问题。音频生成并回填后，还必须运行强校验：
 
-### 10. 汇总并等待用户确认
+```bash
+python scripts/validate_presentation_script_md.py <PresentationScript.md> --meeting-id <meeting_id> --require-durations
+```
+
+### 10. 将脚本 Markdown 转换为 JSON
+
+运行：
+
+```bash
+python scripts/script_md_to_json.py <PresentationScript.md> --output <PresentationScript.json> --title "<meeting_topic>"
+```
+
+JSON 必须与 Markdown 脚本内容保持一致。初始 JSON 中 `duration` 和 `push_interval` 可以保持为 `null`，等待音频生成后回填。
+
+### 11. 汇总脚本并等待用户审核确认
 
 运行：
 
@@ -330,48 +368,77 @@ python scripts/summarize_outputs.py <meeting_id> --data-root <SimulatedData>
 - 客户画像摘要。
 - 讲解脚本摘要。
 - 会议数据目录。
-- `CustomerProfile.md`、`PresentationDocument.md`、`PresentationScript.md` 的完整路径。
+- `CustomerProfile.md`、`PresentationDocument.md`、`PresentationScript.md`、`PresentationScript.json` 的完整路径。
 
-等待用户确认。若用户提出修改意见，更新相关文档并重新校验。
+必须明确提示用户先审核 `PresentationScript.md`，审核通过后再回复确认继续生成音频。若用户提出修改意见，更新相关文档，重新校验，并重新生成 `PresentationScript.json`。
 
-### 11. 将脚本 Markdown 转换为 JSON
+对用户输出必须包含 `PresentationScript.md` 的完整路径，并使用类似话术：
+
+```text
+请先审核讲解脚本文档。如果文档已审核通过，需要继续预生成音频文件，请回复“确认”。
+```
+
+### 12. 生成音频
+
+用户确认脚本文档审核通过后，先回复：
+
+```text
+好的，正在生成音频文件，请稍等，任务完成后我会第一时间通知您。
+```
+
+然后运行 TTS 生成脚本：
+
+```bash
+python scripts/tts_generate_audio.py <PresentationScript.json> --meeting-dir <PresetMeetingData/meeting_id> --request
+```
+
+脚本默认使用 OpenAI-compatible TTS endpoint `https://api-tts.tuguan.net/v1/audio/speech` 和内置 token；音色固定为 `Timbre1`。脚本也支持页面代理 `/api/tts` 模式：
+
+```bash
+python scripts/tts_generate_audio.py <PresentationScript.json> --meeting-dir <PresetMeetingData/meeting_id> --mode proxy --endpoint http://127.0.0.1:5174/api/tts --request
+```
+
+默认不加 `--request` 时只做 dry-run 并输出待生成音频清单，不会请求 TTS 服务。即使 `PresentationScript.json` 中的 `audio` 是完整 HTTP 地址，脚本也必须只取音频文件名，并写入本地 `<meeting_dir>/audio/` 目录。只有脚本返回 `status: generated` 且音频文件已写入本地 `<meeting_dir>/audio/` 目录后，才能声称真实音频已生成。
+
+### 13. 回填音频时长
+
+真实 MP3 文件生成后，必须回填音频时长：
+
+```bash
+python scripts/fill_audio_durations.py <PresentationScript.json> --meeting-dir <PresetMeetingData/meeting_id> --script-md <PresentationScript.md>
+```
+
+该脚本会逐个读取音频文件实际时长，向上取整后回写 `PresentationScript.md` 的 `时长(s)` 和 `推送间隔(s)`，并同步更新 `PresentationScript.json` 的 `duration` 和 `push_interval`。即使脚本中的 `audio` 是完整 HTTP 地址，也必须只取音频文件名，并从本地 `<meeting_dir>/audio/` 目录读取 MP3，不得通过 HTTP 地址读取时长。
+
+回填后运行：
+
+```bash
+python scripts/validate_presentation_script_md.py <PresentationScript.md> --meeting-id <meeting_id> --require-durations
+```
+
+### 14. 发布讲解脚本 JSON 到 Presenter 共享目录
+
+音频时长回填并通过强校验后，必须将 `PresentationScript.json` 发布到 Windows 共享目录：
+
+```text
+\\172.16.1.138\共享\prensenterData
+```
 
 运行：
 
 ```bash
-python scripts/script_md_to_json.py <PresentationScript.md> --output <PresentationScript.json> --title "<meeting_topic>"
+python scripts/publish_presenter_data.py <meeting_id> --data-root <SimulatedData>
 ```
 
-JSON 必须与 Markdown 脚本内容保持一致。
-
-### 12. 生成或规划音频
-
-用户确认后回复：
+发布结果必须为共享目录下的同名会议文件夹，且该文件夹中只包含 `PresentationScript.json`。例如：
 
 ```text
-好的，正在生成所需的音频及相关资源，请稍等，生成完毕后第一时间通知您。
+\\172.16.1.138\共享\prensenterData\M20260611_001\PresentationScript.json
 ```
 
-运行 TTS 占位脚本：
+脚本默认使用账号 `digihail`、密码 `frontfree` 访问共享目录。如需测试路径但不执行拷贝，可加 `--dry-run`。
 
-```bash
-python scripts/tts_generate_audio.py <PresentationScript.json> --meeting-dir <PresetMeetingData/meeting_id>
-```
-
-TTS 当前尚未实现。除非真实 TTS 服务已经生成 MP3，否则不要声称音频文件或时长已经存在。
-当前阶段已在生成讲解脚本时写入模拟时长，因此不依赖真实音频回填时长。
-
-### 13. 回填音频时长
-
-未来真实 MP3 文件存在后，可运行：
-
-```bash
-python scripts/fill_audio_durations.py <PresentationScript.json> --meeting-dir <PresetMeetingData/meeting_id>
-```
-
-如果未来真实音频时长与模拟时长不同，可用真实时长覆盖 JSON，并同步更新 Markdown 表格中的 `时长(s)` 字段。
-
-### 14. 更新会议索引
+### 15. 更新会议索引
 
 预置会议数据生成完成后，必须更新：
 
@@ -398,6 +465,15 @@ python scripts/update_meeting_index.py <booking_id> --data-root <SimulatedData> 
   "customer_profile_path": "./M20260604_001/customer_profile/CustomerProfile.md",
   "presentation_script_path": "./M20260604_001/PresentationScript.json"
 }
+```
+
+更新索引完成后，必须向用户输出最终完成消息，包含当前会议数据目录完整路径，并明确说明 `<meeting_topic>` 会议预置数据已经生成完毕。例如：
+
+```text
+音频文件已生成，脚本时长已回填，Presenter 数据已发布。
+
+当前会议数据完整路径：<PresetMeetingData/meeting_id>
+<meeting_topic> 会议预置数据已经生成完毕。
 ```
 
 ## 核心输出文件
