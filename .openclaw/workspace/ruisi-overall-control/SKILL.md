@@ -282,7 +282,7 @@ python scripts/mqtt_controller.py '{ "device_type":"hvac", "zone":"meeting-room-
 - HTTP 方法: `POST`
 - Content-Type: `application/json`
 - 请求体: `{"jid": "<设备JID>", "body": "<反馈文本>", "from": "a01@im.tuguan.net"}`
-- 测试阶段：所有推送统一发送至 `niujunke@im.tuguan.net`
+- 测试阶段：所有推送统一发送至 `p01@im.tuguan.net`
 
 **反馈消息模板**：
 
@@ -492,7 +492,7 @@ python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting-room-la
 - **数据写入**：仅限于 `<workspace>/trace-workspace/<business_task>/` 目录
 - **设备控制**：仅通过 HTTP API 调用外部接口，不直接操作硬件
 - **区域映射**：从引用文档 `references/zone-device-mapping.md` 读取
-- **推送目标**：测试阶段统一通过 HTTP API 发送至 `niujunke@im.tuguan.net`，使用标识 `from: a01@im.tuguan.net`
+- **推送目标**：测试阶段统一通过 HTTP API 发送至 `p01@im.tuguan.net`，使用标识 `from: a01@im.tuguan.net`
 - **敏感操作**：灯光/空调/大屏控制均为可逆操作，不涉及数据销毁
 
 ---

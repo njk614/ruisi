@@ -12,7 +12,7 @@ import json
 import re
 from pathlib import Path
 
-AUDIO_URL_RE = re.compile(r"^http://172\.16\.1\.138:8888/SimulatedData/PresetMeetingData/([^/]+)/audio/audio_\d{3}_\d{2}\.mp3$")
+AUDIO_URL_RE = re.compile(r"^http://172\.16\.1\.138:8089/PresetMeetingData/([^/]+)/audio/audio_\d{3}_\d{2}\.mp3$")
 VALID_RESOURCE_TYPES = {"image", "ppt", "video", "webpage", "-"}
 VALID_PERFORMANCE = {
     "-", "", "wave", "point", "nod", "shake_head", "smile", "laugh",
@@ -59,8 +59,10 @@ def main() -> int:
         chapter_id, _topic, segment_id, text, duration, resource_type, resource_url, resource_params, resource_desc, audio, perf_code, perf_duration, push_interval, _perf_desc = row
         duration_value: float | None = None
         perf_duration_value: float | None = None
-        if len(text) > 60:
-            issues.append(f"row {idx}: 文本内容超过 60 字: {len(text)}")
+        if len(text) < 30:
+            issues.append(f"row {idx}: 文本内容少于 30 字: {len(text)}")
+        if len(text) > 90:
+            issues.append(f"row {idx}: 文本内容超过 90 字: {len(text)}")
         if duration in {"", "-"}:
             if args.require_durations:
                 issues.append(f"row {idx}: 时长(s)必须在音频生成后回填")

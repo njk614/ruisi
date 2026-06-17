@@ -18,7 +18,7 @@
 
 - `meetings.json`：会议预定信息
 - `KnowledgeBase/`：本地知识库
-- `DisplayResourceLibrary/resource_catalog.json`：展示资源库
+- `DisplayResourceLibrary/resource_catalog.json`：展示资源库，包含 `templates` 标准模板和 `resources` 基础展示资源
 - `PresetMeetingData/`：预置会议数据输出目录
 
 ## 单场会议输出结构
@@ -53,7 +53,7 @@ PresetMeetingData/
 6. 整理已收集信息给用户确认。
 7. 用户确认输入信息后，先提示正在生成客户画像、演示文档和讲解脚本。
 8. 检索 `KnowledgeBase/` 和公开网络资料，生成 `customer_profile/CustomerProfile.md`。
-9. 检索知识库与 `resource_catalog.json`，生成不少于 1500 字的 `PresentationDocument.md`。
+9. 检索知识库与 `resource_catalog.json`，生成不少于 1500 字的 `PresentationDocument.md`；生成演示文稿时必须先匹配 `templates` 标准模板，命中后整体原样并入，再使用 `resources` 基础展示资源生成其余动态章节。
 10. 基于演示文档生成 `PresentationScript.md`。
 11. 将 `PresentationScript.md` 转换为 `PresentationScript.json`。
 12. 展示第一阶段生成摘要，提供 `PresentationScript.md` 完整路径，引导用户审核脚本文档。
@@ -123,9 +123,9 @@ PresetMeetingData/
 - PPT 每页是一个章节。
 - 视频每个时间片段是一个章节。
 - 图片、网页各自为独立章节。
-- 每个段落文本不超过 60 字。
+- 每个段落文本不少于 30 字，且不超过 90 字。
 - 初始生成时 `时长(s)` 必须填 `-`，不得根据文本长度生成模拟时长。
-- 音频文件必须填写完整 HTTP 地址，格式为 `http://172.16.1.138:8888/SimulatedData/PresetMeetingData/<booking_id>/audio/audio_章节ID三位_段落ID两位.mp3`。
+- 音频文件必须填写完整 HTTP 地址，格式为 `http://172.16.1.138:8089/PresetMeetingData/<booking_id>/audio/audio_章节ID三位_段落ID两位.mp3`。
 - `<booking_id>` 必须使用当前会议真实 `booking_id`，不得使用会议主题、会议室名称或其他文本。
 - 完整 HTTP 音频地址用于最终脚本对外访问；TTS 生成和音频时长回填必须只取文件名，并在本地 `<meeting_dir>/audio/` 目录写入或读取 MP3。
 - 同一章节第一段填写完整资源字段，后续段落资源字段填 `-`。
@@ -145,7 +145,7 @@ PresetMeetingData/
 - 产品名称统一为“孪易”。
 - 客户画像路径为 `当前会议ID/customer_profile/CustomerProfile.md`。
 - JSON 模板使用 `脚本json模板.json`。
-- 脚本段落长度不超过 60 字。
+- 脚本段落长度不少于 30 字，且不超过 90 字。
 
 ## Presenter 共享目录发布要求
 
@@ -158,7 +158,7 @@ python scripts/publish_presenter_data.py <meeting_id> --data-root <SimulatedData
 默认发布到：
 
 ```text
-\\172.16.1.138\共享\prensenterData\<meeting_id>\PresentationScript.json
+\\172.16.1.138\SharedResources\PresetMeetingData\<meeting_id>\PresentationScript.json
 ```
 
 共享目录账号为 `digihail`，密码为 `frontfree`。远端 `<meeting_id>` 文件夹只保留 `PresentationScript.json`，不得发布客户画像、演示文稿、Markdown 脚本或音频目录。

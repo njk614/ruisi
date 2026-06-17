@@ -23,13 +23,12 @@ from pathlib import Path
 
 
 DEFAULT_API_URL = "http://127.0.0.1:18900/send"
-DEFAULT_TO_JID = "niujunke@im.tuguan.net"
+DEFAULT_TO_JID = "p01@im.tuguan.net"
 DEFAULT_FROM_ACCOUNT = "a01@im.tuguan.net"
 DEFAULT_DISPLAY_BASE_URL = "http://172.16.1.138:8088"
 DEFAULT_TESTDATA_PATH = Path(__file__).resolve().parents[1] / "data" / "testdata.json"
 DEFAULT_PRESET_MEETING_DATA_DIR = Path("/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData")
 DEFAULT_MEETING_ROOM_NAME = "大会议室"
-DEFAULT_AUDIO_BASE_URL = "http://192.168.1.254:8888/PresetMeetingData/"
 DEFAULT_ACK_DELAY_SECONDS = 2.0
 
 # runtime 目录保存后台演示进程的状态、控制命令、暂停标记和 pid。
@@ -58,6 +57,32 @@ CHINESE_NUMBERS = {
     "八": 8,
     "九": 9,
     "十": 10,
+}
+
+ACTION_PERFORMANCE_CODES = {
+    "wave",
+    "nod",
+    "shake_head",
+    "point",
+    "spread_hands",
+    "thumbs_up",
+    "clap",
+    "bow",
+    "heart",
+    "ok",
+}
+
+EXPRESSION_PERFORMANCE_CODES = {
+    "neutral",
+    "smile",
+    "laugh",
+    "cover_mouth_laugh",
+    "awkward",
+    "surprise",
+    "puzzled",
+    "serious",
+    "blink",
+    "wink",
 }
 
 
@@ -130,10 +155,6 @@ def meeting_index_path():
 
 def meeting_room_name():
     return os.environ.get("MEETING_ROOM_NAME") or DEFAULT_MEETING_ROOM_NAME
-
-
-def audio_base_url():
-    return os.environ.get("DIGITAL_HUMAN_AUDIO_BASE_URL") or DEFAULT_AUDIO_BASE_URL
 
 
 def display_base_url():
@@ -220,16 +241,14 @@ def find_current_meeting():
     return {"meeting": meeting, "booking_id": booking_id, "script_path": script_path}, None
 
 
-def full_audio_url(audio):
-    """把脚本里的音频相对路径补成数字人可访问的完整 URL。"""
+def audio_url(audio):
+    """从脚本中读取数字人可访问的完整音频 URL。"""
     if audio is None:
         return ""
     audio_text = str(audio).strip()
     if not audio_text:
         return ""
-    if re.match(r"^https?://", audio_text, flags=re.IGNORECASE):
-        return audio_text
-    return audio_base_url().rstrip("/") + "/" + audio_text.lstrip("/").replace("\\", "/")
+    return audio_text
 
 
 def ensure_runtime_dir():
@@ -406,8 +425,13 @@ def start_demo_runner(dry_run=False, chapter_index=0, segment_index=0, require_s
     ensure_runtime_dir()
     state = read_demo_state()
     if is_demo_active(state):
+        # 重启前必须确认老进程真正退出，否则两个后台进程会同时向 P02 推送，
+        # 造成消息穿插、节奏看着翻倍。先下 stop 命令给优雅退出机会，再用
+        # stop_demo_process 等待 + 超时强杀并校验；连强杀都失败就放弃本次启动，
+        # 绝不在老进程仍存活时叠加新进程。
         write_demo_command("stop", reason="restart")
-        time.sleep(0.5)
+        if not stop_demo_process(state):
+            return "failed", "无法停止当前正在运行的演示，已取消本次启动以避免多个演示叠加"
     reset_runtime_commands()
     meeting_info, error = find_current_meeting()
     if error:
@@ -583,19 +607,30 @@ def require_present(payload, key):
     return value
 
 
+def performance_prefix(performance_code):
+    """按数字人素材白名单区分动作 action 和表情 expr。"""
+    code = str(performance_code or "").strip()
+    if not code:
+        return ""
+    if code in ACTION_PERFORMANCE_CODES:
+        return f"[action:{code}]"
+    if code in EXPRESSION_PERFORMANCE_CODES:
+        return f"[expr:{code}]"
+    return ""
+
+
 def build_segment_messages(chapter, segment):
     """从章节/段落中提取数字人消息和内容展示器 show 指令。"""
     chapter_id = chapter.get("chapter_id")
     segment_id = segment.get("segment_id")
-    performance_code = segment.get("performance_code") or ""
-    action_prefix = f"[action:{performance_code}]" if performance_code else ""
+    prefix = performance_prefix(segment.get("performance_code"))
     digital_human_message = {
         "messagetype": "bot",
         "data": {
             "messageId": f"section-{chapter_id}-{segment_id}",
-            "text": f"{action_prefix}{segment.get('text') or ''}",
+            "text": f"{prefix}{segment.get('text') or ''}",
             "duration": segment.get("duration"),
-            "audioUrl": full_audio_url(segment.get("audio")),
+            "audioUrl": audio_url(segment.get("audio")),
         },
     }
     display_message = {
@@ -855,11 +890,18 @@ def stop_content_display():
     return False, response
 
 
-def send_with_retry(channel, message):
-    """按消息类型选择发送通道：内容展示器走 HTTP，数字人模拟消息走 P02/XMPP。"""
+def send_with_retry(channel, message, abort_check=None):
+    """按消息类型选择发送通道：内容展示器走 HTTP，数字人模拟消息走 P02/XMPP。
+
+    abort_check 是可选回调（后台演示传入 is_pause_flag_set）：在重试间隙检查，
+    若已暂停就放弃后续重试并返回 "aborted"，让当前段尽快收尾进入暂停，而不是
+    在慢网络/失败时傻等满 timeout+重试（最坏约 10s）。即时推送场景不传，行为不变。
+    """
     if channel == CONTENT_DISPLAY_CHANNEL:
         last_error = None
         for attempt in range(2):
+            if attempt > 0 and abort_check is not None and abort_check():
+                return "aborted", last_error
             try:
                 response = show_display_segment(message)
                 if response.get("success") is True:
@@ -883,6 +925,8 @@ def send_with_retry(channel, message):
 
     last_error = None
     for attempt in range(2):
+        if attempt > 0 and abort_check is not None and abort_check():
+            return "aborted", last_error
         try:
             response = post_json(api_url, request_payload, token=token)
             if response.get("success") is True:

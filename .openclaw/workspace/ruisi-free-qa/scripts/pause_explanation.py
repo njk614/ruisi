@@ -7,6 +7,7 @@ import argparse
 import json
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -69,6 +70,30 @@ def build_command(script_path: Path, config: dict[str, Any]) -> list[str]:
     return [sys.executable, str(script_path), "--payload", pause_message]
 
 
+def fast_touch_pause_flag(script_path: Path) -> None:
+    """在拉起 send_message.py 之前，先就地写下 demo_pause.flag 做快速止血。
+
+    free-qa 暂停链路最大的延迟在“再启动一层 Python + 加载配置 + 解析意图”，
+    而后台 run_demo_sequence.py 只认 runtime/demo_pause.flag 是否存在。这里
+    从 send_message.py 路径推导出同级 runtime 目录，第一时间写下 flag，让后台
+    在下一个检查点（≤0.2s）就能停住；随后照常走 subprocess 调用，由
+    send_message.py 用它自己计算的 RUNTIME_DIR 再写一遍，形成双保险。
+
+    纯 best-effort：路径推导或写入失败都不抛错，不影响后续正规暂停流程。
+    """
+    try:
+        # script_path 形如 .../ruisi-explanation-service/scripts/send_message.py
+        runtime_dir = script_path.resolve().parent.parent / "runtime"
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        flag_path = runtime_dir / "demo_pause.flag"
+        flag_path.write_text(
+            datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        eprint(f"fast_touch_pause_flag 跳过（不影响主流程）：{exc}")
+
+
 def parse_json_stdout(stdout: str) -> dict[str, Any] | None:
     if not stdout:
         return None
@@ -102,6 +127,9 @@ def main() -> int:
 
         if not script_path.exists():
             raise FileNotFoundError(f"ruisi-explanation-service 入口脚本不存在: {script_path}")
+
+        # 先就地写下暂停标记快速止血，再走正规 subprocess 调用。
+        fast_touch_pause_flag(script_path)
 
         result = subprocess.run(command, capture_output=True, text=True, check=False)
         stdout = (result.stdout or "").strip()

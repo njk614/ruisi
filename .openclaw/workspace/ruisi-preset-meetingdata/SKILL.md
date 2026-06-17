@@ -19,7 +19,7 @@ description: 为 OpenClaw 中指定会议生成预置会议数据，包括客户
 
 - `meetings.json`：会议预定信息。
 - `KnowledgeBase/`：本地知识库文件。
-- `DisplayResourceLibrary/resource_catalog.json`：展示资源库。
+- `DisplayResourceLibrary/resource_catalog.json`：展示资源库，包含 `templates` 标准模板和 `resources` 基础展示资源。
 - `PresetMeetingData/`：生成后的会议预置数据目录。
 
 如果在本地镜像环境中调试，调用脚本时传入 `--data-root <SimulatedData路径>`。
@@ -256,7 +256,7 @@ PresetMeetingData/<meeting_id>/customer_profile/CustomerProfile.md
 ../PresentationScript.json
 ```
 
-### 6. 推荐展示资源
+### 6. 推荐标准模板与展示资源
 
 运行：
 
@@ -264,12 +264,24 @@ PresetMeetingData/<meeting_id>/customer_profile/CustomerProfile.md
 python scripts/rank_display_resources.py --data-root <SimulatedData> --query "<meeting_topic>" --query "<company>" --query "<interest>" --limit 12
 ```
 
-只使用 `resource_catalog.json` 中真实存在的资源。优先选择分数更高且描述与章节内容匹配的资源。
+该脚本会读取 `resource_catalog.json` 中的 `templates` 和 `resources`：
+
+- 先根据客户画像、会议主题、公司名称、团队兴趣点、额外资料需求等上下文，匹配 `templates` 中的 `description` 和 `triggers`。
+- 如果匹配到模板，必须优先使用模板，按模板 `file_path` 读取 Markdown 内容。
+- 模板 `file_path` 使用相对路径时，按 `resource_catalog.json` 所在目录解析；模板文件不存在时不得声称已使用该模板。
+- 模板的 `position` 表示模板整体在演示流程中的位置：`opening` 放在开头，`closing` 放在结尾，`middle` 可放在中间合适位置。
+- `position` 只约束模板整体位置；模板内所有章节顺序、展示资源和讲解内容不得调整。
+- 当模板标记 `immutable: true` 时，模板内容必须原样并入 `PresentationDocument.md`，不得改写、摘要化、增删章节或替换资源路径。
+- `total_chapters` 用于校验模板包含的章节数量；并入时应保持完整章节。
+- 模板处理完成后，再使用 `resources` 中真实存在的基础展示资源，补充生成客户定制、产品、方案、案例等动态章节。
+
+只使用 `resource_catalog.json` 中真实存在的模板和资源。基础展示资源优先选择分数更高且描述与章节内容匹配的资源。
 
 资源路径强制规则：
 
 - 演示文稿、讲解脚本 Markdown、讲解脚本 JSON 中使用到的每个展示资源，`资源URL` / `resource.url` 必须原样使用 `resource_catalog.json` 中对应资源的 `file_path` 字段。
-- 如果 `file_path` 是完整网络地址，例如 `http://172.16.1.138:8888/.../xxx.png`，必须完整写入，不得改写为 `/images/xxx.png`、相对路径或本地路径。
+- 标准模板中已经写好的展示资源路径也必须原样保留，不得用 `resources` 中的其他资源替换。
+- 如果 `file_path` 是完整网络地址，例如 `http://172.16.1.138:8089/DisplayResourceLibrary/images/xxx.png`，必须完整写入，不得改写为 `/images/xxx.png`、相对路径或本地路径。
 - 不得编造资源路径，也不得根据文件名自行拼接路径。
 
 ### 7. 讲解主体身份强制规则
@@ -297,7 +309,9 @@ PresetMeetingData/<meeting_id>/PresentationDocument.md
 - 按中文业务需求不少于 1500 字。
 - 结合当前会议主题和已生成的客户画像。
 - 产品和方案描述应基于本地知识库。
+- 生成演示文稿前必须先处理 `resource_catalog.json.templates`，命中标准模板时优先将模板整体原样并入，再结合 `resource_catalog.json.resources` 生成其余动态章节。
 - 使用 `resource_catalog.json` 中的展示资源，并原样保留每个资源的 `file_path` 完整地址。
+- 已并入的标准模板章节不得被模型重写、压缩、换序或拆散；动态章节不得重复生成模板已经覆盖的公司介绍内容。
 - 章节结构应便于后续转换成讲解脚本。
 - 必须遵守“讲解主体身份强制规则”，不得把我方参会人员写成口播讲解人。
 
@@ -315,12 +329,12 @@ PresetMeetingData/<meeting_id>/PresentationScript.md
 
 - 使用规定的 Markdown 表格列。
 - 一个独立展示资源实例对应一个章节。
-- 每个段落文本不超过 60 字。
+- 每个段落文本不少于 30 字，且不超过 90 字。
 - 初次生成时 `时长(s)` 必须填 `-`，不得填写模拟时长。
 - 每个章节第一行必须填写资源类型、URL、参数和描述。
 - 同一章节后续行的资源字段填 `-`。
 - 资源 URL 必须原样来自 `resource_catalog.json.file_path`，完整网络地址不能截短。
-- 音频文件必须填写完整 HTTP 地址，格式为 `http://172.16.1.138:8888/SimulatedData/PresetMeetingData/<meeting_id>/audio/audio_001_01.mp3`。
+- 音频文件必须填写完整 HTTP 地址，格式为 `http://172.16.1.138:8089/PresetMeetingData/<meeting_id>/audio/audio_001_01.mp3`。
 - `<meeting_id>` 必须使用当前会议真实 `booking_id`，不得使用会议主题、会议室名称或其他文本。
 - 音频字段中的完整 HTTP 地址仅用于数字人、内容展示器等外部设备访问音频；TTS 生成和音频时长回填必须只取其中的文件名，并映射到本地 `<meeting_dir>/audio/<音频文件名>` 读写。
 - 表演素材码只能使用模板中的合法值；不需要表演时填 `-`。
@@ -421,7 +435,7 @@ python scripts/validate_presentation_script_md.py <PresentationScript.md> --meet
 音频时长回填并通过强校验后，必须将 `PresentationScript.json` 发布到 Windows 共享目录：
 
 ```text
-\\172.16.1.138\共享\prensenterData
+\\172.16.1.138\SharedResources\PresetMeetingData
 ```
 
 运行：
@@ -433,7 +447,7 @@ python scripts/publish_presenter_data.py <meeting_id> --data-root <SimulatedData
 发布结果必须为共享目录下的同名会议文件夹，且该文件夹中只包含 `PresentationScript.json`。例如：
 
 ```text
-\\172.16.1.138\共享\prensenterData\M20260611_001\PresentationScript.json
+\\172.16.1.138\SharedResources\PresetMeetingData\M20260611_001\PresentationScript.json
 ```
 
 脚本默认使用账号 `digihail`、密码 `frontfree` 访问共享目录。如需测试路径但不执行拷贝，可加 `--dry-run`。

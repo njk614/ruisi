@@ -6,7 +6,7 @@
       "chapter_topic": "开场致辞",
       "resource": {
         "type": "image",
-        "url": "http://172.16.1.138:8888/SimulatedData/DisplayResourceLibrary/images/welcome.png",
+        "url": "http://172.16.1.138:8089/DisplayResourceLibrary/images/huawei_welcome.png",
         "params": null,
         "description": "欢迎背景"
       },
@@ -15,7 +15,7 @@
           "segment_id": 1,
           "text": "尊敬的各位领导、专家，大家好！我是AI接待助理。",
           "duration": null,
-          "audio": "http://172.16.1.138:8888/SimulatedData/PresetMeetingData/M20260610_001/audio/audio_001_01.mp3",
+          "audio": "http://172.16.1.138:8089/PresetMeetingData/M20260610_001/audio/audio_001_01.mp3",
           "performance_code": "wave",
           "performance_duration": 4,
           "push_interval": null,

@@ -2,6 +2,17 @@
 
 生成 `PresentationDocument.md` 时参考以下结构。全文不少于 1500 字，并结合客户画像、会议主题、本地知识库和展示资源库。
 
+## 标准模板使用规则
+
+- 生成演示文稿前，必须先匹配 `resource_catalog.json` 中的 `templates`。
+- 模板匹配依据为客户画像、会议主题、公司名称、团队兴趣点、额外资料需求，以及模板的 `description` 和 `triggers`。
+- 命中模板后，按模板 `file_path` 读取 Markdown 内容，并根据 `position` 将模板整体放入演示流程：`opening` 放开头，`closing` 放结尾，`middle` 放中间合适位置。
+- 模板 `file_path` 使用相对路径时，按 `resource_catalog.json` 所在目录解析；模板文件不存在时不得声称已使用该模板。
+- `position` 只表示模板整体位置；模板内部所有章节顺序、展示资源和讲解内容不可调整。
+- `immutable: true` 的模板必须原样并入 `PresentationDocument.md`，不得改写、摘要、增删章节、替换资源路径或重新生成同类内容。
+- 模板并入后，再使用 `resources` 中的基础展示资源生成客户定制、产品、方案、案例等动态章节。
+- 动态生成章节不得重复覆盖模板已经包含的固定公司介绍内容。
+
 ## 讲解主体身份
 
 - 讲解主体固定为“数字冰雹AI助理”或“数字冰雹AI接待助理”。

@@ -7,13 +7,14 @@ preset_meeting_data:
 # 知识库检索
 knowledge:
   file_path: '/home/clawd/.openclaw/workspace/SimulatedData/KnowledgeBase/DH初始知识库.txt'
-  top_k: 3
-  chunk_chars: 500
+  top_k: 3 # 返回最相关的前 N 个片段
+  chunk_chars: 500 # 顶级主题块超过该字数时，块内按空行/句子二次切片的目标长度
+  overlap_chars: 50 # 二次切片时相邻片段的字符重叠，避免答案正好落在切口处丢失
 
 # P02 消息发送
 p02:
   api_url: 'http://127.0.0.1:18900/send'
-  to_jid: 'niujunke@im.tuguan.net'
+  to_jid: 'p01@im.tuguan.net'
   from_account: 'a01@im.tuguan.net'
   token: ''
   timeout_seconds: 5

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 '''将会议讲解脚本 JSON 发布到 Presenter Windows 共享目录。
 
 本脚本只拷贝当前会议目录下的 PresentationScript.json，并在目标共享目录
@@ -20,7 +20,7 @@ from pathlib import Path
 from common import data_root, meeting_dir
 
 
-DEFAULT_SHARE_PATH = '\\\\172.16.1.138\\' + '\u5171\u4eab' + '\\prensenterData'
+DEFAULT_SHARE_PATH = '\\\\172.16.1.138\\SharedResources\\PresetMeetingData'
 DEFAULT_USERNAME = 'digihail'
 DEFAULT_PASSWORD = 'frontfree'
 MEETING_ID_RE = re.compile(r'^[A-Za-z0-9_-]+$')
@@ -131,3 +131,5 @@ def main() -> int:
 
 if __name__ == '__main__':
     raise SystemExit(main())
+
+

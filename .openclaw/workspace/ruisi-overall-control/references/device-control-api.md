@@ -221,11 +221,11 @@ curl -sX POST http://127.0.0.1:18900/send \
 
 ```json
 {
-  "jid": "niujunke@im.tuguan.net",
+  "jid": "p01@im.tuguan.net",
   "body": "已为您关闭大会议室灯光。",
   "from": "a01@im.tuguan.net"
 }
 ```
 
-**测试阶段**：所有推送统一发送至 `niujunke@im.tuguan.net`。
+**测试阶段**：所有推送统一发送至 `p01@im.tuguan.net`。
 **生产环境**：根据设备类型（P01/P02/P03）发送至对应 JID。

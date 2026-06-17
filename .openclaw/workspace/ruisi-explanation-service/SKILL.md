@@ -38,6 +38,7 @@ Skill 真实调用内容展示器 HTTP API；数字人仍通过 P02/XMPP 模拟�
    - 状态类：`演示状态`、`当前演示`、`讲到哪`、`推送到哪`
 
    语义边界（务必区分暂停与停止）：演示运行中短指令 `暂停`、`先停`、`停一下`、`别讲`、`别放` 一律按暂停演示处理，可被 `继续` 恢复；而 `停止`、`停止演示`、`结束演示`、`关闭演示`、`退出演示` 等带有“停止/结束/关闭/退出”语义的表达必须按停止演示处理，触发清理退出并调用 `/api/stop`，绝不能归为暂停。
+
 2. 合法 JSON，且包含 `chapters` 字段。
 3. JSON 片段，形如 `"chapters": [...]`。
 
@@ -275,7 +276,7 @@ python .openclaw/workspace/skills/ruisi-explanation-service/scripts/send_message
     "messageId": "section-1-1",
     "text": "[action:bow]尊敬的华为各位领导、专家，大家好！我是公司产品的AI接待助理。",
     "duration": 6,
-    "audioUrl": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_001_01.mp3"
+    "audioUrl": "http://172.16.1.138:8089/PresetMeetingData/M20260616_001/audio/audio_001_01.mp3"
   }
 }
 ```
@@ -295,10 +296,15 @@ POST http://172.16.1.138:8088/api/show
 数字人消息从第一个 `segment` 抽取并转换：
 
 - `messageId`：`section-章节ID-段落ID`
-- `text`：`[action:表演动作指令]` + 完整段落文本；若 `performance_code` 为空，则不添加 action 前缀
+- `text`：根据 `performance_code` 白名单自动添加素材前缀后拼接完整段落文本；动作使用 `[action:动作指令]`，表情使用 `[expr:表情指令]`；若 `performance_code` 为空或不在白名单内，则不添加前缀
 - `duration`：段落播报时长，只用于发给数字人的消息
 - `push_interval`：推送间隔，后台脚本按这个值等待后再推送下一段
-- `audioUrl`：音频完整路径，默认前缀为 `http://192.168.1.254:8888/PresetMeetingData/`
+- `audioUrl`：直接使用脚本 `audio` 字段中的完整音频地址
+
+当前数字人素材白名单：
+
+- 动作：`wave`、`nod`、`shake_head`、`point`、`spread_hands`、`thumbs_up`、`clap`、`bow`、`heart`、`ok`
+- 表情：`neutral`、`smile`、`laugh`、`cover_mouth_laugh`、`awkward`、`surprise`、`puzzled`、`serious`、`blink`、`wink`
 
 内容展示器消息中，`chapter_index` 由 `chapter_id - 1` 得到，`segment_index` 由 `segment_id - 1` 得到。
 
@@ -319,9 +325,9 @@ POST http://172.16.1.138:8088/api/show
   "messagetype": "bot",
   "data": {
     "messageId": "section-2-1",
-    "text": "[action:serious]我们在数字孪生领域深耕近二十年，积累了上千个落地项目经验，也早已深度融入华为的生态体系。",
+    "text": "[expr:serious]我们在数字孪生领域深耕近二十年，积累了上千个落地项目经验，也早已深度融入华为的生态体系。",
     "duration": 10,
-    "audioUrl": "http://192.168.1.254:8888/PresetMeetingData/audio/audio_002_01.mp3"
+    "audioUrl": "http://172.16.1.138:8089/PresetMeetingData/M20260616_001/audio/audio_002_01.mp3"
   }
 }
 ```
@@ -355,7 +361,7 @@ http://127.0.0.1:18900/send
 请求体：
 
 ```json
-{ "jid": "niujunke@im.tuguan.net", "body": "<JSON消息>", "from": "a01@im.tuguan.net" }
+{ "jid": "p01@im.tuguan.net", "body": "<JSON消息>", "from": "a01@im.tuguan.net" }
 ```
 
 ## 内容展示器 HTTP 对接
@@ -395,7 +401,7 @@ POST /api/show
 | 配置          | 值                            |
 | ------------- | ----------------------------- |
 | API           | `http://127.0.0.1:18900/send` |
-| 接收方 `jid`  | `niujunke@im.tuguan.net`      |
+| 接收方 `jid`  | `p01@im.tuguan.net`           |
 | 发送方 `from` | `a01@im.tuguan.net`           |
 
 环境变量覆盖：
@@ -403,7 +409,7 @@ POST /api/show
 | 环境变量                       | 默认值                                                            |
 | ------------------------------ | ----------------------------------------------------------------- |
 | `XMPP_SEND_API_URL`            | `http://127.0.0.1:18900/send`                                     |
-| `P02_JID`                      | `niujunke@im.tuguan.net`                                          |
+| `P02_JID`                      | `p01@im.tuguan.net`                                               |
 | `XMPP_FROM_ACCOUNT`            | `a01@im.tuguan.net`                                               |
 | `XMPP_SEND_API_TOKEN`          | 空                                                                |
 | `CONTENT_DISPLAY_BASE_URL`     | `http://172.16.1.138:8088`                                        |
@@ -411,7 +417,6 @@ POST /api/show
 | `MEETING_INDEX_PATH`           | `<PRESET_MEETING_DATA_DIR>/meeting_index.json`                    |
 | `MEETING_ROOM_NAME`            | `大会议室`                                                        |
 | `SIM_CURRENT_TIME`             | 空；非空时用于本地测试当前时间，格式 `YYYY-MM-DD HH:MM`           |
-| `DIGITAL_HUMAN_AUDIO_BASE_URL` | `http://192.168.1.254:8888/PresetMeetingData/`                    |
 | `DEMO_ACK_DELAY_SECONDS`       | `2.0`                                                             |
 
 ## 错误处理

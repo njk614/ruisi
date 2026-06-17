@@ -34,7 +34,12 @@ def utc_now():
 
 
 def wait_until_not_before(not_before):
-    """等待入口脚本给 OpenClaw 返回确认消息后，再开始真实推送。"""
+    """等待入口脚本给 OpenClaw 返回确认消息后，再开始真实推送。
+
+    这段 ack 延迟（含 resume 后再次进入的延迟）原本是“死等”，期间不查暂停
+    标记，是一处盲区：用户在延迟窗口内点暂停，要等延迟走完才会被感知。这里
+    改成循环时顺带查 demo_pause.flag，一旦置位立即返回，让暂停尽快生效。
+    """
     if not_before is None:
         return
     try:
@@ -42,6 +47,8 @@ def wait_until_not_before(not_before):
     except (TypeError, ValueError):
         return
     while True:
+        if is_pause_flag_set():
+            return
         remaining = target - time.time()
         if remaining <= 0:
             return
@@ -192,6 +199,30 @@ def clear_pause_flag():
         pass
 
 
+def remove_runtime_file(path):
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def cleanup_own_runtime_files():
+    """后台进程退出时清理自己的控制残留，避免 pid/command/flag 文件长期堆积、
+    指向一个早已退出的进程。只在 demo.pid 确实记录的是自己时才删 pid 文件，
+    防止误删后续启动的新进程留下的 pid。command/flag 是一次性控制文件，
+    本进程退出后必然失效，直接清理。"""
+    own_pid = str(os.getpid())
+    recorded_pid = ""
+    try:
+        recorded_pid = PID_PATH.read_text(encoding="utf-8").strip()
+    except (OSError, FileNotFoundError):
+        recorded_pid = ""
+    if recorded_pid == own_pid:
+        remove_runtime_file(PID_PATH)
+    remove_runtime_file(COMMAND_PATH)
+    remove_runtime_file(PAUSE_FLAG_PATH)
+
+
 def apply_command_not_before(command):
     if isinstance(command, dict):
         wait_until_not_before(command.get("not_before"))
@@ -210,7 +241,11 @@ def send_item(item, dry_run=False):
     for channel, message in messages:
         if is_pause_flag_set():
             return "paused"
-        ok, detail = send_with_retry(channel, message)
+        ok, detail = send_with_retry(channel, message, abort_check=is_pause_flag_set)
+        if ok == "aborted":
+            # 重试间隙检测到暂停：当前段不再硬撑重试，按暂停语义收尾，
+            # 不能当作 send failed（否则后台进程会直接退出）。
+            return "paused"
         if not ok:
             log(f"SEND_FAILED detail={detail}")
             return False
@@ -438,6 +473,10 @@ def main():
         write_state("failed", message=str(exc))
         log(f"FAILED {exc}")
         return 1
+    finally:
+        # 不论正常播完、被停止还是异常退出，都清掉本进程的 pid/command/flag 残留，
+        # 避免运行态文件长期堆积、指向已退出的进程。保留 demo_state.json 记录最终状态。
+        cleanup_own_runtime_files()
 
 
 if __name__ == "__main__":

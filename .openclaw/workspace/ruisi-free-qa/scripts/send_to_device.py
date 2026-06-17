@@ -49,7 +49,7 @@ def p02_config(config: dict[str, Any]) -> dict[str, Any]:
     dry_run_env = str(os.environ.get("P02_DRY_RUN", "")).lower() in {"1", "true", "yes", "on"}
     return {
         "api_url": os.environ.get("XMPP_SEND_API_URL") or p02.get("api_url") or "http://127.0.0.1:18900/send",
-        "to_jid": os.environ.get("P02_JID") or p02.get("to_jid") or "niujunke@im.tuguan.net",
+        "to_jid": os.environ.get("P02_JID") or p02.get("to_jid") or "p01@im.tuguan.net",
         "from_account": os.environ.get("XMPP_FROM_ACCOUNT")
         or p02.get("from_account")
         or "a01@im.tuguan.net",

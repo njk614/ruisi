@@ -195,4 +195,4 @@ trace-workspace/<business_task>/<YYYYMMDD_HHMMSS>_<execution_id前8位>/
 2. 留痕目录必须生成，即使操作失败
 3. 反馈消息要简洁友好，不暴露技术细节
 4. 温度值必须在 16-30°C 范围内
-5. 测试阶段所有反馈统一发送至 `niujunke@im.tuguan.net`
+5. 测试阶段所有反馈统一发送至 `p01@im.tuguan.net`

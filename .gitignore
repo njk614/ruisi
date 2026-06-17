@@ -1,1 +1,5 @@
 /.claude
+
+# workspace 下的所有 zip 包
+.openclaw/workspace/**/*.zip
+.openclaw/workspace/备份/

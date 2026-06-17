@@ -36,9 +36,9 @@ zones:
 
 # 设备 JID 映射（用于反馈推送）
 devices:
-  P01: 'niujunke@im.tuguan.net' # 测试阶段统一推送
-  P02: 'niujunke@im.tuguan.net'
-  P03: 'niujunke@im.tuguan.net'
+  P01: 'p01@im.tuguan.net' # 测试阶段统一推送
+  P02: 'p01@im.tuguan.net'
+  P03: 'p01@im.tuguan.net'
 
 # XMPP 推送配置
 xmpp:

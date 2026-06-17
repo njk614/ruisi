@@ -48,7 +48,7 @@ metadata:
 
 - 触发范围是任意 OpenClaw 实例收到的所有表达询问或提问形式的用户文本，不要按来源设备过滤。
 - 不直接操作底层资源；HTTP、XMPP、P02 推送等外部调用通过 `scripts/` 下的 Python 脚本完成。
-- 查询相关资料时，`profile_queries.py` 负责从预置会议索引中尝试定位当前会议并检查该会议资料文件是否存在，`knowledge_retriever.py` 只负责检查指定知识库文件是否存在；读取文件内容、组织资料、调用大模型生成答案由 Skill 编排层直接完成。
+- 查询相关资料时，`profile_queries.py` 负责从预置会议索引中尝试定位当前会议并检查该会议资料文件是否存在；`knowledge_retriever.py` 负责按用户问题对知识库做轻量检索，返回最相关的若干文本片段（`top_k`），编排层只使用这些返回片段，不再读取整篇知识库。读取会议资料内容、组织资料、调用大模型生成答案由 Skill 编排层直接完成。
 - 会议信息索引使用 `config.yaml` 中 `preset_meeting_data.base_dir` 与 `preset_meeting_data.meeting_index_file`（默认 `/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData/meeting_index.json`）；编排层需先匹配 `meeting_region` 为“大会议室”且 `time_range` 包含当前时间点的会议，再使用该会议的 `booking_id` 定位同名会议目录。
 - 编排层内部返回结果必须是纯 JSON 对象，不包含额外自然语言解释，不包 Markdown 代码块；该内部结果不得直接透传到用户会话界面。
 - 对于任何提问语义的消息，先执行 `python scripts/pause_explanation.py`，通知 ruisi-explanation-service 执行暂停，再做任何资料检查、模型调用或答案推送。
@@ -86,12 +86,12 @@ metadata:
 3. 调用 `python scripts/profile_queries.py` 读取并检查 `/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData/meeting_index.json`。脚本必须在 `meetings` 数组中查找 `meeting_region` 为“大会议室”且 `time_range` 包含当前时间点的会议。
 4. `profile_queries.py` 匹配到当前会议后，提取该会议的 `booking_id`，在 `/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData/<booking_id>/` 下定位并检查 `PresentationScript.json`，返回 `booking_id`、`meeting_topic`、`time_range`、`presentation_script_path`、`customer_profile_path` 等路径信息。该脚本只做索引匹配与文件存在性检查，不解析资料内容。
 5. 若没有匹配到会议、会议索引文件不存在、会议目录不存在或 `PresentationScript.json` 不存在，`profile_queries.py` 返回 `{"exists":false,"fallback":"knowledge_only","message":"..."}`，编排层记录该状态并继续执行知识库问答流程，不得终止问答。
-6. 调用 `python scripts/knowledge_retriever.py --query "<question>"` 检查 `knowledge.file_path` 是否存在。该脚本只返回 `{"exists":true,"path":"..."}`，不得检索或解析知识库内容。
-7. Skill 编排层必须读取 `knowledge_retriever.py` 返回的 knowledge `file_path`。仅当 `profile_queries.py` 返回 `exists=true` 时，才读取其返回的 `presentation_script_path`；若 `customer_profile_path` 存在，也必须作为补充画像资料读取。
+6. 调用 `python scripts/knowledge_retriever.py --query "<question>"` 对知识库做轻量检索。该脚本读取 `knowledge.file_path`，按问题切片打分后返回 `{"exists":true,"path":"...","query":"...","chunks":[{"score":..,"title":"..","text":".."}, ...]}`，其中 `chunks` 已是按相关度排序的 `top_k`（见 `config.yaml` 的 `knowledge.top_k`）个原文片段。
+7. Skill 编排层只使用 `knowledge_retriever.py` 返回的 `chunks[].text` 作为知识库素材，不再读取整篇知识库文件。仅当 `profile_queries.py` 返回 `exists=true` 时，才读取其返回的 `presentation_script_path`；若 `customer_profile_path` 存在，也必须作为补充画像资料读取。若 `chunks` 为空（脚本已做兜底，正常不会为空），可退回读取知识库文件开头部分，避免无素材生成。
 8. 在调用模型前执行问题归一化：识别同义问法并映射到统一意图（如“是什么/介绍一下”→产品定义与介绍），确定回答详细度级别（精简/标准/详细；默认标准）。
-9. 若会议资料可用，先从 `PresentationScript.json` 与可选 `CustomerProfile.md` 中提取可用于对客表达的画像要素，包括但不限于亲切昵称/称呼、兴趣点、关注方向、历史项目、行业背景、会议主题与当前会谈目标；再将“归一化后的问题意图 + 用户问题原文 + 当前会议 booking_id/topic/time_range + 画像要素 + PresentationScript.json 内容 + 可选客户画像内容 + 知识库内容”交给 OpenClaw 内置大模型服务生成答案。
+9. 若会议资料可用，先从 `PresentationScript.json` 与可选 `CustomerProfile.md` 中提取可用于对客表达的画像要素，包括但不限于亲切昵称/称呼、兴趣点、关注方向、历史项目、行业背景、会议主题与当前会谈目标；再将“归一化后的问题意图 + 用户问题原文 + 当前会议 booking_id/topic/time_range + 画像要素 + PresentationScript.json 内容 + 可选客户画像内容 + 知识库检索片段（`knowledge_retriever.py` 返回的 `chunks`）”交给 OpenClaw 内置大模型服务生成答案。
 10. 会议资料可用时，回答必须体现画像个性化：优先以亲切昵称或合适称呼开头或自然带入，并围绕用户兴趣点/关注方向解释答案；不要暴露内部字段名、匹配过程、文件路径或“根据画像显示”等系统痕迹。
-11. 若会议资料或用户画像不可用，则将“归一化后的问题意图 + 用户问题原文 + 知识库内容”交给 OpenClaw 内置大模型服务生成答案，使用稳妥通用称呼，不编造昵称或兴趣点。
+11. 若会议资料或用户画像不可用，则将“归一化后的问题意图 + 用户问题原文 + 知识库检索片段（`knowledge_retriever.py` 返回的 `chunks`）”交给 OpenClaw 内置大模型服务生成答案，使用稳妥通用称呼，不编造昵称或兴趣点。
 12. 对于产品介绍类问题（含“是什么/介绍一下/做什么的”），默认按固定骨架输出：`一句话定义`、`核心能力`、`适用场景`、`下一步建议`，确保不同问法的一致性；若画像显示用户关注特定能力或场景，应在骨架内优先展开相关内容。
 13. 答案生成时强制使用“本公司虚拟助理第一人称视角”输出：优先使用“我/我们”，语气专业、礼貌、简洁，不暴露内部匹配过程与字段名。
 14. 调用 `python scripts/send_to_device.py --message-kind answer --message "<answer>"`，将完整答案推送给 P02。
@@ -114,7 +114,7 @@ python scripts/send_to_device.py --message-kind answer --message "测试回答" 
 | 脚本                             | 作用                                                        |
 | -------------------------------- | ----------------------------------------------------------- |
 | `scripts/profile_queries.py`     | 按当前时间与“大会议室”从 `meeting_index.json` 匹配当前会议，并返回该会议 `PresentationScript.json` 路径 |
-| `scripts/knowledge_retriever.py` | 只检查指定 OpenClaw `DH初始知识库.txt` 是否存在并返回路径   |
+| `scripts/knowledge_retriever.py` | 检查并读取指定 OpenClaw `DH初始知识库.txt`，按 `--query` 对全文做轻量检索（标题/分隔块切片 + 中文 bigram 打分），返回 `top_k` 个最相关片段 `chunks` |
 | `scripts/pause_explanation.py`   | 调用 ruisi-explanation-service 的 `send_message.py` 入口，发送暂停 payload |
 | `scripts/send_to_device.py`      | 按指定 body 格式向 P02 推送答案消息                         |
 
@@ -144,6 +144,7 @@ ruisi-free-qa 默认通过 `scripts/pause_explanation.py` 调用 ruisi-explanati
 | ruisi-explanation-service 返回当前无演示 | 视为暂停成功并继续问答 | `{"status":"success","message":"当前无演示，无需暂停"}`                         |
 | 当前会议资料检查失败                   | 降级为仅知识库回答 | `{"status":"success","message":"会议资料不可用，已按知识库回答"}`              |
 | 知识库文件不存在                       | 终止问答流程 | `{"status":"failed","message":"知识库文件检查失败：..."}`                      |
+| 知识库检索未命中任何片段               | 降级返回兜底片段并继续 | `{"exists":true,"chunks":[...],"fallback":"low_confidence"}`                   |
 | 当前时间未匹配“大会议室”会议           | 降级为仅知识库回答 | `{"status":"success","message":"未匹配当前会议，已按知识库回答"}`              |
 | OpenClaw 大模型服务调用失败            | 终止问答流程 | `{"status":"failed","message":"大模型服务错误：..."}`                          |
 | 答案推送 P02 失败                      | 终止问答流程 | `{"status":"failed","message":"答案推送P02失败：..."}`                         |
