@@ -36,7 +36,7 @@ dependencies:
 ## 必须遵守的约定
 
 - 所有底层设备操作（灯光、空调）通过 MQTT / HTTP API 调用外部接口完成，本 Skill 不直接操作硬件。
-- **孪易大屏指令不在本 Skill 执行**：识别出孪易大屏 / 场景 / 对象 / 视频类指令后，将**用户原始输入**通过 IM 转发给 `ar01@im.tuguan.net`（部署了 ruisi-twinioc-command-skill 的 Agent），由其完成识别与下发。本 Skill 不维护孪易指令库，也不直连孪易接口。转发后仅回用户一句"孪易交互指令已转发给AR01"，不等待、不回传执行结果——物理大屏画面变化即为反馈。
+- **孪易大屏指令不在本 Skill 执行**：识别出孪易大屏 / 场景 / 对象 / 视频类指令后，将**用户原始输入**通过 IM 转发给 `test-ar01@im.tuguan.net`（部署了 ruisi-twinioc-command-skill 的 Agent），由其完成识别与下发。本 Skill 不维护孪易指令库，也不直连孪易接口。转发后仅回用户一句"孪易交互指令已转发给AR01"，不等待、不回传执行结果——物理大屏画面变化即为反馈。
 - 自动调节模式中，环境数据查询失败或设备调用失败不应中断流程，仅发送提醒消息给 P01。
 - 用户指令必须通过语义解析确认，不得直接执行未解析的原始文本。
 - 留痕目录和 `manifest.json` 必须生成。
@@ -212,7 +212,7 @@ zone = "meeting-room-large"  // 强制覆盖
 
 > **本类指令不在本 Skill 执行，转发给 ar01。**
 
-识别到孪易大屏 / 场景 / 对象 / 视频类意图（关键词：大屏、场景、层级、楼层、下一层/上一层、视野、图层、图表、聚焦、选中、搜索对象、主题、**主题生成、生成、统计、创建、分析、报告/report**、告警、摄像头、视频、回放、云台等）时，**不做参数解析、不查本地接口**，直接把**用户原始输入**转发给 `ar01@im.tuguan.net`：
+识别到孪易大屏 / 场景 / 对象 / 视频类意图（关键词：大屏、场景、层级、楼层、下一层/上一层、视野、图层、图表、聚焦、选中、搜索对象、主题、**主题生成、生成、统计、创建、分析、报告/report**、告警、摄像头、视频、回放、云台等）时，**不做参数解析、不查本地接口**，直接把**用户原始输入**转发给 `test-ar01@im.tuguan.net`：
 
 > **C02 主题生成（动词触发，内容为自由文本）**：当用户说"生成XX""统计XX""创建XX""分析XX"或英文 `generate / statistics / create / analyze / report` 时，属于孪易主题生成（C02）意图，**同样转发给 ar01**。要点：
 >
@@ -223,11 +223,11 @@ zone = "meeting-room-large"  // 强制覆盖
 ```bash
 curl -sX POST http://127.0.0.1:18900/send \
   -H "Content-Type: application/json" \
-  -d '{"jid":"ar01@im.tuguan.net","body":"<用户原始输入>","from":"a01@im.tuguan.net"}'
+  -d '{"jid":"test-ar01@im.tuguan.net","body":"<用户原始输入>","from":"test-a01@im.tuguan.net"}'
 ```
 
 - `body` 为用户原话（如"切换到楼层20并聚焦环境传感器1"），**不要**改写成编码指令串——识别与生成由 ar01 完成。
-- `from` 固定 `a01@im.tuguan.net`；ar01 依据此 JID 直接执行、免确认、不回传。
+- `from` 固定 `test-a01@im.tuguan.net`；ar01 依据此 JID 直接执行、免确认、不回传。
 - **不传孪易 token**：a01 不持有孪易场景 token，转发消息里也不带 token。下发所需的场景 token 由 ar01 侧**预先绑定**（当前方案）。若 ar01 未绑定 token，指令不会下发——需先给 ar01 绑定 token。
 - 转发成功后，仅向用户回一句固定反馈：`孪易交互指令已转发给AR01`。
 - 转发是孪易分支的**终点**：不等待 ar01 回复、不解析执行结果，物理大屏即反馈。随后进入步骤 2.6 留痕。
@@ -281,8 +281,8 @@ python scripts/mqtt_controller.py '{ "device_type":"hvac", "zone":"meeting-room-
 
 - HTTP 方法: `POST`
 - Content-Type: `application/json`
-- 请求体: `{"jid": "<设备JID>", "body": "<反馈文本>", "from": "a01@im.tuguan.net"}`
-- 测试阶段：所有推送统一发送至 `p01@im.tuguan.net`
+- 请求体: `{"jid": "<设备JID>", "body": "<反馈文本>", "from": "test-a01@im.tuguan.net"}`
+- 测试阶段：所有推送统一发送至 `niujunke@im.tuguan.net`
 
 **反馈消息模板**：
 
@@ -492,7 +492,7 @@ python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting-room-la
 - **数据写入**：仅限于 `<workspace>/trace-workspace/<business_task>/` 目录
 - **设备控制**：仅通过 HTTP API 调用外部接口，不直接操作硬件
 - **区域映射**：从引用文档 `references/zone-device-mapping.md` 读取
-- **推送目标**：测试阶段统一通过 HTTP API 发送至 `p01@im.tuguan.net`，使用标识 `from: a01@im.tuguan.net`
+- **推送目标**：测试阶段统一通过 HTTP API 发送至 `niujunke@im.tuguan.net`，使用标识 `from: test-a01@im.tuguan.net`
 - **敏感操作**：灯光/空调/大屏控制均为可逆操作，不涉及数据销毁
 
 ---
@@ -527,7 +527,7 @@ python scripts/mqtt_controller.py '{"device_type":"hvac","zone":"meeting-room-la
 ### 交互点 2：孪易大屏指令（无本地交互，转发 ar01）
 
 - **触发时机**：用户指令涉及孪易大屏 / 场景 / 对象 / 视频类操作，**含主题生成类（生成/统计/创建/分析/report 等动词触发的 C02 意图）**。
-- **处理方式**：本 Skill **不在本地解析参数、不向用户追问**，直接把用户原始输入转发给 `ar01@im.tuguan.net`（见步骤 2.3）。参数缺失、实体名匹配、缺参追问等全部由 ar01 的 ruisi-twinioc-command-skill 处理。
+- **处理方式**：本 Skill **不在本地解析参数、不向用户追问**，直接把用户原始输入转发给 `test-ar01@im.tuguan.net`（见步骤 2.3）。参数缺失、实体名匹配、缺参追问等全部由 ar01 的 ruisi-twinioc-command-skill 处理。
 - **用户反馈**：转发成功后仅回一句 `孪易交互指令已转发给AR01`。
 
 ---

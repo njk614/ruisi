@@ -23,8 +23,8 @@ from pathlib import Path
 
 
 DEFAULT_API_URL = "http://127.0.0.1:18900/send"
-DEFAULT_TO_JID = "p01@im.tuguan.net"
-DEFAULT_FROM_ACCOUNT = "a01@im.tuguan.net"
+DEFAULT_TO_JID = "niujunke@im.tuguan.net"
+DEFAULT_FROM_ACCOUNT = "test-a01@im.tuguan.net"
 DEFAULT_DISPLAY_BASE_URL = "http://172.16.1.138:8088"
 DEFAULT_TESTDATA_PATH = Path(__file__).resolve().parents[1] / "data" / "testdata.json"
 DEFAULT_PRESET_MEETING_DATA_DIR = Path("/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData")

@@ -1,6 +1,6 @@
 ---
 name: ruisi-gesture-control
-description: 接收 ae01@im.tuguan.net 转发的手势/姿势事件（event 为 gesture 或 posture，含 zone、timestamp、gesture_type），识别手势意图后执行两类动作：演示控制（转发 ruisi-explanation-service 的 send_message.py）+ 文本推送（HTTP API 推送提示文本到 p01@im.tuguan.net）。映射规则：gesture_type 为 "OK" → 开始演示，并推送"开始演示"；"X交叉手势" → 暂停，并推送"暂停演示"；"举手" → 暂停，并推送"您好，有什么可以帮助您的？"。本 Skill 仅做识别与映射/转发/推送，不直接跑演示，不直连内容展示器。它处理的是用户对"是否演示"询问的手势回应，与处理 enter 事件的 ruisi-video-perceptionflow 互斥（event 类型不同，不会相互误触发）。
+description: 接收 test-ae01@im.tuguan.net 转发的手势/姿势事件（event 为 gesture 或 posture，含 zone、timestamp、gesture_type），识别手势意图后执行两类动作：演示控制（转发 ruisi-explanation-service 的 send_message.py）+ 文本推送（HTTP API 推送提示文本到 niujunke@im.tuguan.net）。映射规则：gesture_type 为 "OK" → 开始演示，并推送"开始演示"；"X交叉手势" → 暂停，并推送"暂停演示"；"举手" → 暂停，并推送"您好，有什么可以帮助您的？"。本 Skill 仅做识别与映射/转发/推送，不直接跑演示，不直连内容展示器。它处理的是用户对"是否演示"询问的手势回应，与处理 enter 事件的 ruisi-video-perceptionflow 互斥（event 类型不同，不会相互误触发）。
 version: 1.0.0
 author: niujunke
 level: L1
@@ -19,7 +19,7 @@ dependencies: []
 
 # 手势控制流程
 
-> **设计说明**：本 Skill 是一层"识别 → 映射 → 转发/推送"的薄翻译层。它接收 AE01 转发的手势/姿势事件，按映射表执行两类动作：①演示控制——同 Agent 内直接调用 `ruisi-explanation-service` 的 `send_message.py` 执行真实演示控制（开始演示 / 暂停）；②文本推送——通过 HTTP API 把提示文本推送到 P01（`p01@im.tuguan.net`）。它不维护演示逻辑，也不直连内容展示器。
+> **设计说明**：本 Skill 是一层"识别 → 映射 → 转发/推送"的薄翻译层。它接收 AE01 转发的手势/姿势事件，按映射表执行两类动作：①演示控制——同 Agent 内直接调用 `ruisi-explanation-service` 的 `send_message.py` 执行真实演示控制（开始演示 / 暂停）；②文本推送——通过 HTTP API 把提示文本推送到 P01（`niujunke@im.tuguan.net`）。它不维护演示逻辑，也不直连内容展示器。
 
 ## 在整体链路中的位置
 
@@ -84,12 +84,12 @@ dependencies: []
 
 每条手势可同时触发两类动作：**演示控制**（转发讲解服务）与 **文本推送**（HTTP API 推送到 P01）。
 
-| gesture_type 取值 | 优先级 | 演示控制 | 推送文本 → P01 |
-| ----------------- | :----: | -------- | -------------- |
-| `举手` / `raise_hand` / `hand_up` | 高 | `暂停`（调 send_message.py） | `您好，有什么可以帮助您的？` |
-| `X交叉手势` / `X交叉` / `交叉手势` / `cross` / `x` | 中 | `暂停`（调 send_message.py） | `暂停演示` |
-| `OK` / `ok_sign` / `okay` | 低 | `开始演示`（调 send_message.py） | `开始演示` |
-| 其他 | — | — | — （输出 `noop`，原因 `unknown_gesture`） |
+| gesture_type 取值                                  | 优先级 | 演示控制                         | 推送文本 → P01                            |
+| -------------------------------------------------- | :----: | -------------------------------- | ----------------------------------------- |
+| `举手` / `raise_hand` / `hand_up`                  |   高   | `暂停`（调 send_message.py）     | `您好，有什么可以帮助您的？`              |
+| `X交叉手势` / `X交叉` / `交叉手势` / `cross` / `x` |   中   | `暂停`（调 send_message.py）     | `暂停演示`                                |
+| `OK` / `ok_sign` / `okay`                          |   低   | `开始演示`（调 send_message.py） | `开始演示`                                |
+| 其他                                               |   —    | —                                | — （输出 `noop`，原因 `unknown_gesture`） |
 
 ---
 
@@ -102,9 +102,9 @@ POST http://127.0.0.1:18900/send
 Content-Type: application/json
 
 {
-  "jid": "p01@im.tuguan.net",
+  "jid": "niujunke@im.tuguan.net",
   "body": "（提示文本，如 开始演示 / 暂停演示 / 您好，有什么可以帮助您的？）",
-  "from": "a01@im.tuguan.net"
+  "from": "test-a01@im.tuguan.net"
 }
 ```
 
@@ -122,12 +122,12 @@ Content-Type: application/json
 
 ## 输入参数
 
-| 参数名       | 类型   | 必填 | 说明                                          |
-| ------------ | ------ | ---- | --------------------------------------------- |
-| event        | string | 是   | 事件类型，取 `gesture` 或 `posture`           |
-| zone         | string | 是   | 检测区域标识                                  |
-| timestamp    | string | 是   | 检测时间，ISO 8601 含时区                     |
-| gesture_type | string | 是   | 手势取值，见手势映射表（兼容旧字段 `gesture`）|
+| 参数名       | 类型   | 必填 | 说明                                           |
+| ------------ | ------ | ---- | ---------------------------------------------- |
+| event        | string | 是   | 事件类型，取 `gesture` 或 `posture`            |
+| zone         | string | 是   | 检测区域标识                                   |
+| timestamp    | string | 是   | 检测时间，ISO 8601 含时区                      |
+| gesture_type | string | 是   | 手势取值，见手势映射表（兼容旧字段 `gesture`） |
 
 **输入示例**：
 
@@ -144,12 +144,12 @@ Content-Type: application/json
 
 ## 输出参数
 
-| 参数名  | 类型   | 说明                                       |
-| ------- | ------ | ------------------------------------------ |
-| status  | string | success / failed / ignored / noop          |
-| message | string | 人类可读的结果描述                         |
-| command | string | **可选**。映射出的演示控制词（开始演示 / 暂停），举手类为 null |
-| push_text | string | **可选**。推送到 P01 的提示文本             |
+| 参数名    | 类型   | 说明                                                           |
+| --------- | ------ | -------------------------------------------------------------- |
+| status    | string | success / failed / ignored / noop                              |
+| message   | string | 人类可读的结果描述                                             |
+| command   | string | **可选**。映射出的演示控制词（开始演示 / 暂停），举手类为 null |
+| push_text | string | **可选**。推送到 P01 的提示文本                                |
 
 **status 取值**：
 
@@ -192,7 +192,7 @@ python <skills>/ruisi-explanation-service/scripts/send_message.py --payload "开
 
 ```
 POST http://127.0.0.1:18900/send
-{"jid":"p01@im.tuguan.net","body":"<push_text>","from":"a01@im.tuguan.net"}
+{"jid":"niujunke@im.tuguan.net","body":"<push_text>","from":"test-a01@im.tuguan.net"}
 ```
 
 任一动作失败 → 输出 `failed`；全部成功 → 静默。
@@ -217,21 +217,21 @@ python scripts/dispatch_gesture.py --dry-run --payload '{"event":"gesture","zone
 
 ## 错误处理
 
-| 场景                         | 处理方式                       | status  |
-| ---------------------------- | ------------------------------ | :-----: |
-| 事件非法 JSON / 非对象       | 记录原因，不执行               | ignored |
-| 事件类型非 gesture/posture   | 记录原因，不执行               | ignored |
-| 缺少 zone/timestamp/gesture_type | 记录原因，不执行           | ignored |
-| 手势无法识别                 | 记录 unknown_gesture，不执行   |  noop   |
-| 讲解服务脚本不存在 / 调用异常 | 返回失败原因                   | failed  |
-| P01 推送 API 不可达 / 返回失败 | 重试一次后返回失败原因         | failed  |
+| 场景                             | 处理方式                     | status  |
+| -------------------------------- | ---------------------------- | :-----: |
+| 事件非法 JSON / 非对象           | 记录原因，不执行             | ignored |
+| 事件类型非 gesture/posture       | 记录原因，不执行             | ignored |
+| 缺少 zone/timestamp/gesture_type | 记录原因，不执行             | ignored |
+| 手势无法识别                     | 记录 unknown_gesture，不执行 |  noop   |
+| 讲解服务脚本不存在 / 调用异常    | 返回失败原因                 | failed  |
+| P01 推送 API 不可达 / 返回失败   | 重试一次后返回失败原因       | failed  |
 
 ---
 
 ## 安全与权限
 
-- **消息接收**：来自 `ae01@im.tuguan.net` 的手势/姿势事件
-- **下游调用**：①同 Agent 下 `ruisi-explanation-service/scripts/send_message.py` 执行演示控制；②本地 HTTP API `http://127.0.0.1:18900/send` 推送提示文本到 `p01@im.tuguan.net`
+- **消息接收**：来自 `test-ae01@im.tuguan.net` 的手势/姿势事件
+- **下游调用**：①同 Agent 下 `ruisi-explanation-service/scripts/send_message.py` 执行演示控制；②本地 HTTP API `http://127.0.0.1:18900/send` 推送提示文本到 `niujunke@im.tuguan.net`
 - **不持久化**：本 Skill 不写留痕目录、不生成 manifest（与讲解服务一致，控制类为轻量转发）
 
 ---
@@ -330,4 +330,3 @@ python scripts/dispatch_gesture.py --dry-run --payload '{"event":"gesture","zone
 ```json
 { "status": "ignored", "message": "事件类型不匹配（需为 gesture / posture）", "reason": "ignored_event" }
 ```
-

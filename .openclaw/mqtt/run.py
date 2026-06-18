@@ -29,8 +29,8 @@ KEEPALIVE = 60
 
 # XMPP forward endpoint
 XMPP_ENDPOINT = 'http://127.0.0.1:18900/send'
-FORWARD_TO    = 'a01@im.tuguan.net'
-FROM_JID      = 'ae01@im.tuguan.net'
+FORWARD_TO    = 'test-a01@im.tuguan.net'
+FROM_JID      = 'test-ae01@im.tuguan.net'
 
 # Meetings file path
 MEETINGS_FILE = os.path.expanduser('~/.openclaw/workspace/SimulatedData/meetings.json')

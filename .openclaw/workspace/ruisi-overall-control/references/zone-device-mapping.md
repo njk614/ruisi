@@ -19,6 +19,6 @@
 
 ## 测试阶段推送地址
 
-测试阶段所有推送统一通过 HTTP API 发送（即 `POST http://127.0.0.1:18900/send`），目标 JID 统一为 `p01@im.tuguan.net`。
+测试阶段所有推送统一通过 HTTP API 发送（即 `POST http://127.0.0.1:18900/send`），目标 JID 统一为 `niujunke@im.tuguan.net`。
 
 设备标识（P01/P02/P03）保留在消息元数据中，供后续生产环境区分。

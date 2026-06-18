@@ -1,6 +1,6 @@
 ---
 name: ruisi-video-perceptionflow
-description: 接收 ae01@im.tuguan.net 上报的人员检测事件（zone, timestamp, total_count），直接执行：查询会议信息 → 匹配客户画像 → 按人数生成欢迎卡片 → 推送至展示设备 → 并行触发环境自动调节（灯光/空调）。所有流程在此 Skill 内完成，不依赖 SubAgent。
+description: 接收 test-ae01@im.tuguan.net 上报的人员检测事件（zone, timestamp, total_count），直接执行：查询会议信息 → 匹配客户画像 → 按人数生成欢迎卡片 → 推送至展示设备 → 并行触发环境自动调节（灯光/空调）。所有流程在此 Skill 内完成，不依赖 SubAgent。
 version: 1.1.0
 author: 王杉杉
 level: L1
@@ -266,7 +266,7 @@ workspace/trace-workspace/<business_task>/<YYYYMMDD_HHMMSS>_<execution_id前8位
 | main-hall          | P03  | 主场屏           |
 | **其他**           | P01  | 兜底（记录警告） |
 
-> **测试阶段**：无论 zone 映射结果如何，推送目标地址统一为 `p01@im.tuguan.net`（通过 HTTP API `/send` 发送）。设备标识（P01/P02/P03）仍保留在卡片元数据中供后续生产环境使用。
+> **测试阶段**：无论 zone 映射结果如何，推送目标地址统一为 `niujunke@im.tuguan.net`（通过 HTTP API `/send` 发送）。设备标识（P01/P02/P03）仍保留在卡片元数据中供后续生产环境使用。
 
 **4.5 整理备注信息**
 检查所有访客的特殊接待需求（如"需要翻译"），汇总写入 `notes` 字段。
@@ -289,7 +289,7 @@ workspace/trace-workspace/<business_task>/<YYYYMMDD_HHMMSS>_<execution_id前8位
 
 将欢迎卡片内容（`welcome_card.text` 中的文本）发送至指定 JID。
 
-**测试阶段推送地址**：统一推送至 `p01@im.tuguan.net`
+**测试阶段推送地址**：统一推送至 `niujunke@im.tuguan.net`
 
 **推送方式**：通过 HTTP API 发送
 
@@ -298,9 +298,9 @@ POST http://127.0.0.1:18900/send
 Content-Type: application/json
 
 {
-  "jid": "p01@im.tuguan.net",
+  "jid": "niujunke@im.tuguan.net",
   "body": "（欢迎卡片文本内容）",
-  "from": "a01@im.tuguan.net"
+  "from": "test-a01@im.tuguan.net"
 }
 ```
 
@@ -397,8 +397,8 @@ Content-Type: application/json
 
 - **数据读取**：仅限于 `~/.openclaw/workspace/SimulatedData/` 目录下的预置文件
 - **数据写入**：仅限于 `trace-workspace/<business_task>/` 目录
-- **消息接收**：来自 ae01@im.tuguan.net 的事件消息，通过 `POST http://127.0.0.1:18900/send` 接收
-- **设备推送**：测试阶段通过 `POST http://127.0.0.1:18900/send` 推送至 `p01@im.tuguan.net`，from 为 `a01@im.tuguan.net`
+- **消息接收**：来自 test-ae01@im.tuguan.net 的事件消息，通过 `POST http://127.0.0.1:18900/send` 接收
+- **设备推送**：测试阶段通过 `POST http://127.0.0.1:18900/send` 推送至 `niujunke@im.tuguan.net`，from 为 `test-a01@im.tuguan.net`
 - **敏感信息**：访客个人信息仅用于欢迎卡片，不持久化到 trace 目录外
 
 ---
@@ -426,7 +426,7 @@ Content-Type: application/json
   > **Y** 推送　**N** 取消　**P** 仅保存
 - **默认值**：关闭（自动触发场景不等待人工确认）
 - **说明**：
-  - 自动触发（来自 `ae01@im.tuguan.net`）时，直接执行步骤 5 的推送逻辑。
+  - 自动触发（来自 `test-ae01@im.tuguan.net`）时，直接执行步骤 5 的推送逻辑。
   - 仅当显式开启手动调试模式时，才启用 Y/N/P 交互确认。
 
 ---

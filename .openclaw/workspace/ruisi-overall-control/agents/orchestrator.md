@@ -84,7 +84,7 @@ python scripts/environment_query.py check meeting-room-large
 
 - **lighting**：开灯、关灯、打开灯光、关闭照明
 - **hvac**：开空调、关空调、空调、温度、调温
-- **twinscreen**：大屏、切换场景、层级、视野、图层、聚焦/选中对象、摄像头/视频、回放、云台。**本类不在本地执行**——识别后把用户原始输入转发给 `ar01@im.tuguan.net`，回用户"孪易交互指令已转发给AR01"，不解析参数、不查接口、不等回传（详见 SKILL.md 步骤 2.3）。
+- **twinscreen**：大屏、切换场景、层级、视野、图层、聚焦/选中对象、摄像头/视频、回放、云台。**本类不在本地执行**——识别后把用户原始输入转发给 `test-ar01@im.tuguan.net`，回用户"孪易交互指令已转发给AR01"，不解析参数、不查接口、不等回传（详见 SKILL.md 步骤 2.3）。
 
 ### 动作识别
 
@@ -195,4 +195,4 @@ trace-workspace/<business_task>/<YYYYMMDD_HHMMSS>_<execution_id前8位>/
 2. 留痕目录必须生成，即使操作失败
 3. 反馈消息要简洁友好，不暴露技术细节
 4. 温度值必须在 16-30°C 范围内
-5. 测试阶段所有反馈统一发送至 `p01@im.tuguan.net`
+5. 测试阶段所有反馈统一发送至 `niujunke@im.tuguan.net`

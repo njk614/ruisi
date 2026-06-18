@@ -14,8 +14,8 @@ knowledge:
 # P02 消息发送
 p02:
   api_url: 'http://127.0.0.1:18900/send'
-  to_jid: 'p01@im.tuguan.net'
-  from_account: 'a01@im.tuguan.net'
+  to_jid: 'niujunke@im.tuguan.net'
+  from_account: 'test-a01@im.tuguan.net'
   token: ''
   timeout_seconds: 5
   dry_run: false

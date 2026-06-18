@@ -3,8 +3,8 @@
   "index": 1,
   "data_file": "E:\\Workspace\\OpenClaw\\ruisi\\.openclaw\\workspace\\ruisi-explanation-service\\data\\PresentationScript.md",
   "interval_seconds": 10,
-  "target_jid": "p01@im.tuguan.net",
-  "sender_account": "a01@im.tuguan.net",
+  "target_jid": "niujunke@im.tuguan.net",
+  "sender_account": "test-a01@im.tuguan.net",
   "updated_at": "2026-06-03T19:15:54",
   "completion_sent": false
 }

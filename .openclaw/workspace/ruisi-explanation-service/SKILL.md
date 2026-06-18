@@ -361,7 +361,7 @@ http://127.0.0.1:18900/send
 请求体：
 
 ```json
-{ "jid": "p01@im.tuguan.net", "body": "<JSON消息>", "from": "a01@im.tuguan.net" }
+{ "jid": "niujunke@im.tuguan.net", "body": "<JSON消息>", "from": "test-a01@im.tuguan.net" }
 ```
 
 ## 内容展示器 HTTP 对接
@@ -401,23 +401,23 @@ POST /api/show
 | 配置          | 值                            |
 | ------------- | ----------------------------- |
 | API           | `http://127.0.0.1:18900/send` |
-| 接收方 `jid`  | `p01@im.tuguan.net`           |
-| 发送方 `from` | `a01@im.tuguan.net`           |
+| 接收方 `jid`  | `niujunke@im.tuguan.net`      |
+| 发送方 `from` | `test-a01@im.tuguan.net`      |
 
 环境变量覆盖：
 
-| 环境变量                       | 默认值                                                            |
-| ------------------------------ | ----------------------------------------------------------------- |
-| `XMPP_SEND_API_URL`            | `http://127.0.0.1:18900/send`                                     |
-| `P02_JID`                      | `p01@im.tuguan.net`                                               |
-| `XMPP_FROM_ACCOUNT`            | `a01@im.tuguan.net`                                               |
-| `XMPP_SEND_API_TOKEN`          | 空                                                                |
-| `CONTENT_DISPLAY_BASE_URL`     | `http://172.16.1.138:8088`                                        |
-| `PRESET_MEETING_DATA_DIR`      | `/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData` |
-| `MEETING_INDEX_PATH`           | `<PRESET_MEETING_DATA_DIR>/meeting_index.json`                    |
-| `MEETING_ROOM_NAME`            | `大会议室`                                                        |
-| `SIM_CURRENT_TIME`             | 空；非空时用于本地测试当前时间，格式 `YYYY-MM-DD HH:MM`           |
-| `DEMO_ACK_DELAY_SECONDS`       | `2.0`                                                             |
+| 环境变量                   | 默认值                                                            |
+| -------------------------- | ----------------------------------------------------------------- |
+| `XMPP_SEND_API_URL`        | `http://127.0.0.1:18900/send`                                     |
+| `P02_JID`                  | `niujunke@im.tuguan.net`                                          |
+| `XMPP_FROM_ACCOUNT`        | `test-a01@im.tuguan.net`                                          |
+| `XMPP_SEND_API_TOKEN`      | 空                                                                |
+| `CONTENT_DISPLAY_BASE_URL` | `http://172.16.1.138:8088`                                        |
+| `PRESET_MEETING_DATA_DIR`  | `/home/clawd/.openclaw/workspace/SimulatedData/PresetMeetingData` |
+| `MEETING_INDEX_PATH`       | `<PRESET_MEETING_DATA_DIR>/meeting_index.json`                    |
+| `MEETING_ROOM_NAME`        | `大会议室`                                                        |
+| `SIM_CURRENT_TIME`         | 空；非空时用于本地测试当前时间，格式 `YYYY-MM-DD HH:MM`           |
+| `DEMO_ACK_DELAY_SECONDS`   | `2.0`                                                             |
 
 ## 错误处理
 

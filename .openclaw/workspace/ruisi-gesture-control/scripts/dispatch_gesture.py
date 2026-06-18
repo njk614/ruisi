@@ -34,8 +34,8 @@ GESTURE_FIELDS = ("gesture_type", "gesture")
 
 # P01 文本推送默认配置（HTTP API，对齐 ruisi-free-qa）。可用 CLI / 环境变量覆盖。
 DEFAULT_PUSH_API_URL = "http://127.0.0.1:18900/send"
-DEFAULT_PUSH_JID = "p01@im.tuguan.net"
-DEFAULT_PUSH_FROM = "a01@im.tuguan.net"
+DEFAULT_PUSH_JID = "niujunke@im.tuguan.net"
+DEFAULT_PUSH_FROM = "test-a01@im.tuguan.net"
 DEFAULT_PUSH_TIMEOUT = 5.0
 
 # 手势取值 -> 动作。取值统一转小写后匹配，便于兼容大小写差异。
@@ -103,12 +103,12 @@ def parse_args():
     parser.add_argument(
         "--push-jid",
         default=os.environ.get("P01_JID") or DEFAULT_PUSH_JID,
-        help="推送目标 JID（默认 p01@im.tuguan.net）。",
+        help="推送目标 JID（默认 niujunke@im.tuguan.net）。",
     )
     parser.add_argument(
         "--push-from",
         default=os.environ.get("XMPP_FROM_ACCOUNT") or DEFAULT_PUSH_FROM,
-        help="推送来源账号（默认 a01@im.tuguan.net）。",
+        help="推送来源账号（默认 test-a01@im.tuguan.net）。",
     )
     parser.add_argument(
         "--dry-run",

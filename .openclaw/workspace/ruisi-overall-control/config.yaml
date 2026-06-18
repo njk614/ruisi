@@ -36,14 +36,14 @@ zones:
 
 # 设备 JID 映射（用于反馈推送）
 devices:
-  P01: 'p01@im.tuguan.net' # 测试阶段统一推送
-  P02: 'p01@im.tuguan.net'
-  P03: 'p01@im.tuguan.net'
+  P01: 'niujunke@im.tuguan.net' # 测试阶段统一推送
+  P02: 'niujunke@im.tuguan.net'
+  P03: 'niujunke@im.tuguan.net'
 
 # XMPP 推送配置
 xmpp:
   api_url: 'http://127.0.0.1:18900/send'
-  from_account: 'a01@im.tuguan.net'
+  from_account: 'test-a01@im.tuguan.net'
   timeout_seconds: 5
 
 # 当前上下文文件（记录用户当前所在区域）

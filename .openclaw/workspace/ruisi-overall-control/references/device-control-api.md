@@ -15,18 +15,18 @@
 
 ## 1. 孪易大屏控制（已改为转发 ar01，本地接口废弃）
 
-> **⚠️ 本 Skill 不再本地执行孪易大屏指令。** 识别到孪易大屏 / 场景 / 对象 / 视频类意图后，把**用户原始输入**通过 IM 转发给 `ar01@im.tuguan.net`（部署了 ruisi-twinioc-command-skill 的 Agent），由其完成识别、实体名校验与下发。
+> **⚠️ 本 Skill 不再本地执行孪易大屏指令。** 识别到孪易大屏 / 场景 / 对象 / 视频类意图后，把**用户原始输入**通过 IM 转发给 `test-ar01@im.tuguan.net`（部署了 ruisi-twinioc-command-skill 的 Agent），由其完成识别、实体名校验与下发。
 
 **转发方式**：
 
 ```bash
 curl -sX POST http://127.0.0.1:18900/send \
   -H "Content-Type: application/json" \
-  -d '{"jid":"ar01@im.tuguan.net","body":"<用户原始输入>","from":"a01@im.tuguan.net"}'
+  -d '{"jid":"test-ar01@im.tuguan.net","body":"<用户原始输入>","from":"test-a01@im.tuguan.net"}'
 ```
 
 - `body`：用户原话，不改写成编码指令串。
-- `from`：固定 `a01@im.tuguan.net`，ar01 依此 JID 直接执行、免确认、不回传。
+- `from`：固定 `test-a01@im.tuguan.net`，ar01 依此 JID 直接执行、免确认、不回传。
 - 转发后仅回用户 `孪易交互指令已转发给AR01`，物理大屏即反馈。
 
 > 下方原 `POST /api/twinscreen/control` 接口及中文指令映射表已**不再使用**，保留仅作历史参考。孪易完整指令集见 ar01 的 `ruisi-twinioc-command-skill/SKILL.md`。
@@ -221,11 +221,11 @@ curl -sX POST http://127.0.0.1:18900/send \
 
 ```json
 {
-  "jid": "p01@im.tuguan.net",
+  "jid": "niujunke@im.tuguan.net",
   "body": "已为您关闭大会议室灯光。",
-  "from": "a01@im.tuguan.net"
+  "from": "test-a01@im.tuguan.net"
 }
 ```
 
-**测试阶段**：所有推送统一发送至 `p01@im.tuguan.net`。
+**测试阶段**：所有推送统一发送至 `niujunke@im.tuguan.net`。
 **生产环境**：根据设备类型（P01/P02/P03）发送至对应 JID。
